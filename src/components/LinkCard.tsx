@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { MoreHorizontal, Trash2, Pencil, Eye } from 'lucide-react'
 import type { Link } from '@/lib/types'
 import { getCategoryById } from '@/lib/categories'
-import { getDisplayLabel } from '@/lib/utils'
+import { getDisplayLabel, getDisplayTitle } from '@/lib/utils'
 
 interface LinkCardProps {
   link: Link
@@ -66,7 +66,7 @@ export function LinkCard({ link, onOpen, onDelete, onEdit }: LinkCardProps) {
       className="link-card card-enter bg-white rounded-lg overflow-hidden cursor-pointer relative group"
       style={{ border: '1px solid var(--border)' }}
       role="article"
-      aria-label={`${link.title} - ${link.domain}`}
+      aria-label={`${getDisplayTitle(link)} - ${link.domain}`}
       onClick={handleCardClick}
       onKeyDown={handleCardKeyDown}
       tabIndex={0}
@@ -81,7 +81,7 @@ export function LinkCard({ link, onOpen, onDelete, onEdit }: LinkCardProps) {
           className="font-semibold text-sm leading-snug line-clamp-2 mb-1"
           style={{ color: 'var(--text-primary)', fontSize: '15px' }}
         >
-          {link.title || link.domain}
+          {getDisplayTitle(link)}
         </h3>
 
         {/* Domain + favicon */}

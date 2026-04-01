@@ -2,6 +2,16 @@
 
 All notable changes to link-box are documented here.
 
+## [0.0.3.0] - 2026-04-01
+
+### Added
+- Folder CRUD in desktop sidebar — create folders inline (Enter to confirm, Esc to cancel), click to filter, hover X to delete
+- `unassignFolder(folderId)` in `useLinks` — batch sets `folderId = null` on all links in the deleted folder
+- `unassignFolderLinks(folderId)` in `storage.ts` — atomic batch update for folder link reassignment
+- Folder filter composes with text search: search operates within the active folder
+- Active folder and "전체" button highlight with accent color
+- 1 new unit test for `unassignFolder`
+
 ## [0.0.2.0] - 2026-04-01
 
 ### Fixed

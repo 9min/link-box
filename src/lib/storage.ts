@@ -105,6 +105,14 @@ export function deleteFolder(id: string): Folder[] {
   return folders
 }
 
+export function unassignFolderLinks(folderId: string): Link[] {
+  const links = readLinks().map(l =>
+    l.folderId === folderId ? { ...l, folderId: null } : l
+  )
+  writeLinks(links)
+  return links
+}
+
 export function updateFolder(id: string, patch: Partial<Folder>): Folder[] {
   const folders = readFolders().map(f =>
     f.id === id ? { ...f, ...patch } : f

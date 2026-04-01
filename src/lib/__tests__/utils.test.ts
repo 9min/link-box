@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { formatRelativeTime, debounce, getDisplayLabel } from '../utils'
+import { formatRelativeTime, debounce, getDisplayLabel, getDisplayTitle } from '../utils'
 
 describe('formatRelativeTime', () => {
   it('shows 방금 전 for < 1 min', () => {
@@ -47,6 +47,72 @@ describe('getDisplayLabel', () => {
   it('falls back to domain on URL parse failure', () => {
     expect(getDisplayLabel('not-a-url', 'github.com'))
       .toBe('github.com')
+  })
+})
+
+describe('getDisplayTitle', () => {
+  const make = (title: string, url: string, domain = 'github.com') =>
+    ({ title, url, domain })
+
+  it('returns OG title when it differs from domain', () => {
+    expect(getDisplayTitle(make('React — A JS library', 'https://github.com/facebook/react')))
+      .toBe('React — A JS library')
+  })
+
+  it('falls back to path when title equals domain', () => {
+    expect(getDisplayTitle(make('github.com', 'https://github.com/facebook/react')))
+      .toBe('facebook / react')
+  })
+
+  it('falls back to path when title is empty', () => {
+    expect(getDisplayTitle(make('', 'https://github.com/facebook/react')))
+      .toBe('facebook / react')
+  })
+
+  it('case-insensitive domain match', () => {
+    expect(getDisplayTitle(make('GitHub.com', 'https://github.com/facebook/react')))
+      .toBe('facebook / react')
+  })
+
+  it('parses GitHub issue URL', () => {
+    expect(getDisplayTitle(make('github.com', 'https://github.com/facebook/react/issues/123')))
+      .toBe('facebook / react #123')
+  })
+
+  it('parses GitHub pull request URL', () => {
+    expect(getDisplayTitle(make('github.com', 'https://github.com/org/repo/pull/42')))
+      .toBe('org / repo #42')
+  })
+
+  it('parses gitlab.com URL', () => {
+    expect(getDisplayTitle(make('gitlab.com', 'https://gitlab.com/inkscape/inkscape', 'gitlab.com')))
+      .toBe('inkscape / inkscape')
+  })
+
+  it('returns domain for root URL with no path', () => {
+    expect(getDisplayTitle(make('github.com', 'https://github.com/')))
+      .toBe('github.com')
+  })
+
+  it('returns domain for single-segment github URL', () => {
+    expect(getDisplayTitle(make('github.com', 'https://github.com/facebook')))
+      .toBe('facebook')
+  })
+
+  it('generic domain uses last 2 path segments', () => {
+    expect(getDisplayTitle({ title: 'example.com', url: 'https://example.com/blog/my-post', domain: 'example.com' }))
+      .toBe('blog / my post')
+  })
+
+  it('hyphens in generic path become spaces', () => {
+    expect(getDisplayTitle({ title: 'example.com', url: 'https://example.com/docs/getting-started', domain: 'example.com' }))
+      .toBe('docs / getting started')
+  })
+
+  it('returns OG title even if domain matches subdomain without eTLD+1', () => {
+    // "Go" should NOT be treated as meaningless for go.dev — it doesn't match "go.dev"
+    expect(getDisplayTitle({ title: 'Go', url: 'https://go.dev/', domain: 'go.dev' }))
+      .toBe('Go')
   })
 })
 
