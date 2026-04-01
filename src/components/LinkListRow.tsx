@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { MoreHorizontal, Trash2, Pencil, Eye } from 'lucide-react'
 import type { Link } from '@/lib/types'
 import { getCategoryById } from '@/lib/categories'
-import { formatRelativeTime, getDisplayLabel } from '@/lib/utils'
+import { formatRelativeTime, getDisplayLabel, getDisplayTitle } from '@/lib/utils'
 
 interface LinkListRowProps {
   link: Link
@@ -34,7 +34,7 @@ export function LinkListRow({ link, onOpen, onDelete, onEdit }: LinkListRowProps
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="row"
-      aria-label={`${link.title} - ${link.domain}`}
+      aria-label={`${getDisplayTitle(link)} - ${link.domain}`}
     >
       {/* Favicon */}
       <img
@@ -47,13 +47,23 @@ export function LinkListRow({ link, onOpen, onDelete, onEdit }: LinkListRowProps
         onError={e => { e.currentTarget.style.display = 'none' }}
       />
 
-      {/* Title */}
-      <span
-        className="flex-1 font-medium text-sm truncate"
-        style={{ color: 'var(--text-primary)', fontSize: '14px' }}
-      >
-        {link.title || link.domain}
-      </span>
+      {/* Title + note */}
+      <div className="flex-1 min-w-0">
+        <span
+          className="block font-medium text-sm truncate"
+          style={{ color: 'var(--text-primary)', fontSize: '14px' }}
+        >
+          {getDisplayTitle(link)}
+        </span>
+        {link.note && (
+          <span
+            className="block truncate"
+            style={{ color: 'var(--text-tertiary)', fontSize: '12px' }}
+          >
+            {link.note}
+          </span>
+        )}
+      </div>
 
       {/* Domain */}
       <span

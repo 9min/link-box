@@ -41,6 +41,61 @@ const PATH_DOMAINS: Record<string, number> = {
   'hub.docker.com': 3,
 }
 
+// Title parsers for specific domains (registry pattern — add parsers as needed).
+// Each parser receives the URL pathname and returns a human-readable title.
+const TITLE_PARSERS: Record<string, (pathname: string) => string> = {
+  'github.com': parseGitHubPath,
+  'gitlab.com': parseGitHubPath,
+  'gist.github.com': parseGitHubPath,
+}
+
+function parseGitHubPath(pathname: string): string {
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments.length === 0) return ''
+  if (segments.length === 1) return segments[0]
+  // issues/pull/discussions: org / repo #number
+  const issueKeywords = ['issues', 'pull', 'discussions', 'releases']
+  const keywordIdx = segments.findIndex(s => issueKeywords.includes(s))
+  if (keywordIdx >= 2 && segments[keywordIdx + 1]) {
+    return `${segments[0]} / ${segments[1]} #${segments[keywordIdx + 1]}`
+  }
+  return `${segments[0]} / ${segments[1]}`
+}
+
+function parseGenericPath(pathname: string): string {
+  const segments = pathname.split('/').filter(Boolean)
+  if (segments.length === 0) return ''
+  const clean = (s: string) => {
+    try { s = decodeURIComponent(s) } catch { /* keep original */ }
+    return s.replace(/[-_]/g, ' ').trim()
+  }
+  const last = segments.slice(-2).map(clean).filter(Boolean)
+  const title = last.join(' / ')
+  return title.length > 60 ? title.slice(0, 57) + '...' : title
+}
+
+function isTitleMeaningless(title: string, domain: string): boolean {
+  if (!title || !title.trim()) return true
+  const t = title.trim().toLowerCase()
+  // Exact match with eTLD+1
+  if (t === domain.toLowerCase()) return true
+  // Exact match with www. prefix
+  if (t === `www.${domain.toLowerCase()}`) return true
+  return false
+}
+
+export function getDisplayTitle(link: { title: string; url: string; domain: string }): string {
+  if (!isTitleMeaningless(link.title, link.domain)) return link.title
+  try {
+    const { pathname } = new URL(link.url)
+    const parser = TITLE_PARSERS[link.domain]
+    const parsed = parser ? parser(pathname) : parseGenericPath(pathname)
+    return parsed || link.domain
+  } catch {
+    return link.domain
+  }
+}
+
 export function getDisplayLabel(url: string, domain: string): string {
   const depth = PATH_DOMAINS[domain]
   if (!depth) return domain
