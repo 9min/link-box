@@ -64,14 +64,15 @@ export function useLinks(): UseLinksReturn {
   }, [])
 
   const toggleFavorite = useCallback((id: string) => {
-    const link = links.find(l => l.id === id)
+    const current = storage.readLinks()
+    const link = current.find(l => l.id === id)
     if (!link) return
     const updated = storage.updateLink(id, {
       isFavorite: !link.isFavorite,
       updatedAt: new Date().toISOString(),
     })
     setLinks(updated)
-  }, [links])
+  }, [])
 
   const unassignFolder = useCallback((folderId: string) => {
     const updated = storage.unassignFolderLinks(folderId)

@@ -41,8 +41,7 @@ export function LinkListRow({ link, onOpen, onDelete, onEdit, onToggleFavorite }
       {onToggleFavorite && (
         <div data-menu onClick={e => e.stopPropagation()}>
           <button
-            className="w-6 h-6 flex items-center justify-center rounded flex-shrink-0"
-            style={{ minWidth: '44px', minHeight: '44px' }}
+            className="w-11 h-11 flex items-center justify-center rounded flex-shrink-0"
             onClick={() => onToggleFavorite(link.id)}
             aria-label={link.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
             aria-pressed={link.isFavorite}

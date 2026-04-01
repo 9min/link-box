@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { LayoutGrid, List, ChevronDown, Search, Plus, X, Inbox, Star, Clock, FolderOpen, Link2, Hash } from 'lucide-react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { LayoutGrid, List, ChevronDown, Search, Plus, X, Inbox, Star, Clock, FolderOpen, Link2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Link, SortOption, ViewMode } from '@/lib/types'
 import { useLinks } from '@/hooks/useLinks'
@@ -22,6 +22,245 @@ const SORT_LABELS: Record<SortOption, string> = {
 }
 
 type ActiveFilter = 'all' | 'favorites' | 'recent'
+
+interface SidebarContentProps {
+  activeFilter: ActiveFilter
+  activeFolderId: string | null
+  activeCategoryId: string | null
+  totalCount: number
+  favoriteCount: number
+  recentCount: number
+  categoryCounts: Record<string, number>
+  folders: import('@/lib/types').Folder[]
+  folderInputVisible: boolean
+  newFolderName: string
+  deletingFolderId: string | null
+  onFilterChange: (filter: ActiveFilter) => void
+  onCategoryFilter: (catId: string) => void
+  onFolderSelect: (folderId: string) => void
+  onFolderInputOpen: () => void
+  onFolderNameChange: (name: string) => void
+  onFolderCreate: () => void
+  onFolderInputClose: () => void
+  onDeleteRequest: (id: string) => void
+  onDeleteCancel: () => void
+  onDeleteConfirm: (id: string) => void
+}
+
+function SidebarContent({
+  activeFilter,
+  activeFolderId,
+  activeCategoryId,
+  totalCount,
+  favoriteCount,
+  recentCount,
+  categoryCounts,
+  folders,
+  folderInputVisible,
+  newFolderName,
+  deletingFolderId,
+  onFilterChange,
+  onCategoryFilter,
+  onFolderSelect,
+  onFolderInputOpen,
+  onFolderNameChange,
+  onFolderCreate,
+  onFolderInputClose,
+  onDeleteRequest,
+  onDeleteCancel,
+  onDeleteConfirm,
+}: SidebarContentProps) {
+  return (
+    <>
+      {/* Logo */}
+      <div className="mb-5 px-2 flex items-center gap-2">
+        <div
+          className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{ background: 'var(--accent)' }}
+        >
+          <Link2 size={14} color="white" />
+        </div>
+        <h1 className="text-sm font-bold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+          link-box
+        </h1>
+      </div>
+
+      {/* Main filters */}
+      <div className="space-y-0.5">
+        <button
+          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm font-medium transition-colors"
+          style={{
+            color: activeFilter === 'all' && !activeFolderId && !activeCategoryId ? 'var(--accent)' : 'var(--text-secondary)',
+            background: activeFilter === 'all' && !activeFolderId && !activeCategoryId ? 'var(--accent-subtle)' : undefined,
+          }}
+          onClick={() => onFilterChange('all')}
+        >
+          <Inbox size={15} style={{ flexShrink: 0 }} />
+          전체
+          <span className="ml-auto text-xs font-normal" style={{ color: activeFilter === 'all' && !activeFolderId && !activeCategoryId ? 'var(--accent)' : 'var(--text-tertiary)' }}>{totalCount}</span>
+        </button>
+        <button
+          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors"
+          style={{
+            color: activeFilter === 'favorites' ? 'var(--accent)' : 'var(--text-secondary)',
+            background: activeFilter === 'favorites' ? 'var(--accent-subtle)' : undefined,
+            fontWeight: activeFilter === 'favorites' ? 500 : undefined,
+          }}
+          onClick={() => onFilterChange('favorites')}
+        >
+          <Star
+            size={15}
+            style={{ flexShrink: 0 }}
+            fill={activeFilter === 'favorites' ? 'var(--accent)' : 'none'}
+          />
+          즐겨찾기
+          {favoriteCount > 0 && (
+            <span className="ml-auto text-xs font-normal" style={{ color: activeFilter === 'favorites' ? 'var(--accent)' : 'var(--text-tertiary)' }}>{favoriteCount}</span>
+          )}
+        </button>
+        <button
+          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors"
+          style={{
+            color: activeFilter === 'recent' ? 'var(--accent)' : 'var(--text-secondary)',
+            background: activeFilter === 'recent' ? 'var(--accent-subtle)' : undefined,
+            fontWeight: activeFilter === 'recent' ? 500 : undefined,
+          }}
+          onClick={() => onFilterChange('recent')}
+        >
+          <Clock size={15} style={{ flexShrink: 0 }} />
+          최근 7일
+          {recentCount > 0 && (
+            <span className="ml-auto text-xs font-normal" style={{ color: activeFilter === 'recent' ? 'var(--accent)' : 'var(--text-tertiary)' }}>{recentCount}</span>
+          )}
+        </button>
+      </div>
+
+      {/* Category filter */}
+      <div className="mt-4">
+        <div className="flex items-center px-2 mb-1">
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+            카테고리
+          </p>
+        </div>
+        <div className="space-y-0.5">
+          {CATEGORIES.filter(c => categoryCounts[c.id] > 0).map(cat => (
+            <button
+              key={cat.id}
+              className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-sm transition-colors"
+              style={{
+                color: activeCategoryId === cat.id ? 'var(--accent)' : 'var(--text-secondary)',
+                background: activeCategoryId === cat.id ? 'var(--accent-subtle)' : undefined,
+                fontWeight: activeCategoryId === cat.id ? 500 : undefined,
+              }}
+              onClick={() => onCategoryFilter(cat.id)}
+            >
+              <span
+                className="w-2 h-2 rounded-full flex-shrink-0"
+                style={{ background: cat.text }}
+              />
+              <span className="truncate text-xs">{cat.label}</span>
+              <span className="ml-auto text-xs" style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
+                {categoryCounts[cat.id]}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Folders */}
+      <div className="mt-4">
+        <div className="flex items-center px-2 mb-1">
+          <p className="text-xs font-semibold uppercase tracking-wide flex-1" style={{ color: 'var(--text-tertiary)' }}>
+            폴더
+          </p>
+          <button
+            className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200"
+            style={{ color: 'var(--text-tertiary)' }}
+            onClick={onFolderInputOpen}
+            aria-label="새 폴더"
+          >
+            <Plus size={12} />
+          </button>
+        </div>
+
+        {folderInputVisible && (
+          <div className="px-2 mb-1">
+            <input
+              autoFocus
+              type="text"
+              value={newFolderName}
+              onChange={e => onFolderNameChange(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') onFolderCreate()
+                if (e.key === 'Escape') onFolderInputClose()
+              }}
+              onBlur={() => { if (!newFolderName.trim()) onFolderInputClose() }}
+              placeholder="폴더 이름"
+              className="w-full px-2 py-1 text-sm rounded border outline-none"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)', fontSize: '13px' }}
+            />
+          </div>
+        )}
+
+        {folders.map(f => (
+          <div key={f.id}>
+            {deletingFolderId === f.id ? (
+              <div
+                className="mx-1 px-3 py-2.5 rounded-lg text-xs"
+                style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
+              >
+                <p className="font-medium mb-2" style={{ color: '#991B1B' }}>
+                  "{f.name}" 폴더를 삭제할까요?
+                </p>
+                <p className="mb-2.5" style={{ color: '#6B7280' }}>
+                  폴더 안 링크는 삭제되지 않습니다.
+                </p>
+                <div className="flex gap-1.5">
+                  <button
+                    className="flex-1 px-2 py-1 rounded text-xs font-medium"
+                    style={{ background: '#DC2626', color: 'white' }}
+                    onClick={() => onDeleteConfirm(f.id)}
+                  >
+                    삭제
+                  </button>
+                  <button
+                    className="flex-1 px-2 py-1 rounded text-xs font-medium"
+                    style={{ background: '#F3F4F6', color: 'var(--text-secondary)' }}
+                    onClick={onDeleteCancel}
+                  >
+                    취소
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="flex items-center group rounded-lg"
+                style={{ background: activeFolderId === f.id ? 'var(--accent-subtle)' : undefined }}
+              >
+                <button
+                  className="flex items-center gap-2.5 flex-1 px-2.5 py-2 rounded-lg text-sm hover:bg-gray-100 text-left transition-colors"
+                  style={{ color: activeFolderId === f.id ? 'var(--accent)' : 'var(--text-secondary)' }}
+                  onClick={() => onFolderSelect(f.id)}
+                >
+                  <FolderOpen size={14} style={{ flexShrink: 0 }} />
+                  <span className="truncate">{f.name}</span>
+                </button>
+                <button
+                  className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 mr-1"
+                  style={{ color: 'var(--text-tertiary)' }}
+                  onClick={() => onDeleteRequest(f.id)}
+                  aria-label={`${f.name} 삭제`}
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
 
 function isRecent(link: Link): boolean {
   const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
@@ -153,10 +392,13 @@ export function HomePage() {
   }, [])
 
   // Build category counts from all links
-  const categoryCounts = CATEGORIES.reduce<Record<string, number>>((acc, cat) => {
-    acc[cat.id] = links.filter(l => l.categoryId === cat.id).length
-    return acc
-  }, {})
+  const categoryCounts = useMemo(
+    () => CATEGORIES.reduce<Record<string, number>>((acc, cat) => {
+      acc[cat.id] = links.filter(l => l.categoryId === cat.id).length
+      return acc
+    }, {}),
+    [links]
+  )
 
   // Apply filters
   let displayLinks = filteredLinks
@@ -182,197 +424,6 @@ export function HomePage() {
   else if (activeCategoryId) pageTitle = CATEGORIES.find(c => c.id === activeCategoryId)?.label ?? '카테고리'
   else if (activeFolder) pageTitle = activeFolder.name
 
-  const SidebarContent = () => (
-    <>
-      {/* Logo */}
-      <div className="mb-5 px-2 flex items-center gap-2">
-        <div
-          className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: 'var(--accent)' }}
-        >
-          <Link2 size={14} color="white" />
-        </div>
-        <h1 className="text-sm font-bold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-          link-box
-        </h1>
-      </div>
-
-      {/* Main filters */}
-      <div className="space-y-0.5">
-        <button
-          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm font-medium transition-colors"
-          style={{
-            color: activeFilter === 'all' && !activeFolderId && !activeCategoryId ? 'var(--accent)' : 'var(--text-secondary)',
-            background: activeFilter === 'all' && !activeFolderId && !activeCategoryId ? 'var(--accent-subtle)' : undefined,
-          }}
-          onClick={() => handleSidebarFilter('all')}
-        >
-          <Inbox size={15} style={{ flexShrink: 0 }} />
-          전체
-          <span className="ml-auto text-xs font-normal" style={{ color: activeFilter === 'all' && !activeFolderId && !activeCategoryId ? 'var(--accent)' : 'var(--text-tertiary)' }}>{links.length}</span>
-        </button>
-        <button
-          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors"
-          style={{
-            color: activeFilter === 'favorites' ? 'var(--accent)' : 'var(--text-secondary)',
-            background: activeFilter === 'favorites' ? 'var(--accent-subtle)' : undefined,
-            fontWeight: activeFilter === 'favorites' ? 500 : undefined,
-          }}
-          onClick={() => handleSidebarFilter('favorites')}
-        >
-          <Star
-            size={15}
-            style={{ flexShrink: 0 }}
-            fill={activeFilter === 'favorites' ? 'var(--accent)' : 'none'}
-          />
-          즐겨찾기
-          {favoriteCount > 0 && (
-            <span className="ml-auto text-xs font-normal" style={{ color: activeFilter === 'favorites' ? 'var(--accent)' : 'var(--text-tertiary)' }}>{favoriteCount}</span>
-          )}
-        </button>
-        <button
-          className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm transition-colors"
-          style={{
-            color: activeFilter === 'recent' ? 'var(--accent)' : 'var(--text-secondary)',
-            background: activeFilter === 'recent' ? 'var(--accent-subtle)' : undefined,
-            fontWeight: activeFilter === 'recent' ? 500 : undefined,
-          }}
-          onClick={() => handleSidebarFilter('recent')}
-        >
-          <Clock size={15} style={{ flexShrink: 0 }} />
-          최근 7일
-          {recentCount > 0 && (
-            <span className="ml-auto text-xs font-normal" style={{ color: activeFilter === 'recent' ? 'var(--accent)' : 'var(--text-tertiary)' }}>{recentCount}</span>
-          )}
-        </button>
-      </div>
-
-      {/* Category filter */}
-      <div className="mt-4">
-        <div className="flex items-center px-2 mb-1">
-          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
-            카테고리
-          </p>
-        </div>
-        <div className="space-y-0.5">
-          {CATEGORIES.filter(c => categoryCounts[c.id] > 0).map(cat => (
-            <button
-              key={cat.id}
-              className="flex items-center gap-2 w-full px-2.5 py-1.5 rounded-lg text-sm transition-colors"
-              style={{
-                color: activeCategoryId === cat.id ? 'var(--accent)' : 'var(--text-secondary)',
-                background: activeCategoryId === cat.id ? 'var(--accent-subtle)' : undefined,
-                fontWeight: activeCategoryId === cat.id ? 500 : undefined,
-              }}
-              onClick={() => handleCategoryFilter(cat.id)}
-            >
-              <span
-                className="w-2 h-2 rounded-full flex-shrink-0"
-                style={{ background: cat.text }}
-              />
-              <span className="truncate text-xs">{cat.label}</span>
-              <span className="ml-auto text-xs" style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>
-                {categoryCounts[cat.id]}
-              </span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Folders */}
-      <div className="mt-4">
-        <div className="flex items-center px-2 mb-1">
-          <p className="text-xs font-semibold uppercase tracking-wide flex-1" style={{ color: 'var(--text-tertiary)' }}>
-            폴더
-          </p>
-          <button
-            className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200"
-            style={{ color: 'var(--text-tertiary)' }}
-            onClick={() => { setFolderInputVisible(true); setNewFolderName('') }}
-            aria-label="새 폴더"
-          >
-            <Plus size={12} />
-          </button>
-        </div>
-
-        {folderInputVisible && (
-          <div className="px-2 mb-1">
-            <input
-              autoFocus
-              type="text"
-              value={newFolderName}
-              onChange={e => setNewFolderName(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') handleFolderCreate()
-                if (e.key === 'Escape') { setFolderInputVisible(false); setNewFolderName('') }
-              }}
-              onBlur={() => { if (!newFolderName.trim()) setFolderInputVisible(false) }}
-              placeholder="폴더 이름"
-              className="w-full px-2 py-1 text-sm rounded border outline-none"
-              style={{ borderColor: 'var(--border)', color: 'var(--text-primary)', fontSize: '13px' }}
-            />
-          </div>
-        )}
-
-        {folders.map(f => (
-          <div key={f.id}>
-            {deletingFolderId === f.id ? (
-              <div
-                className="mx-1 px-3 py-2.5 rounded-lg text-xs"
-                style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
-              >
-                <p className="font-medium mb-2" style={{ color: '#991B1B' }}>
-                  "{f.name}" 폴더를 삭제할까요?
-                </p>
-                <p className="mb-2.5" style={{ color: '#6B7280' }}>
-                  폴더 안 링크는 삭제되지 않습니다.
-                </p>
-                <div className="flex gap-1.5">
-                  <button
-                    className="flex-1 px-2 py-1 rounded text-xs font-medium"
-                    style={{ background: '#DC2626', color: 'white' }}
-                    onClick={() => handleFolderDelete(f.id)}
-                  >
-                    삭제
-                  </button>
-                  <button
-                    className="flex-1 px-2 py-1 rounded text-xs font-medium"
-                    style={{ background: '#F3F4F6', color: 'var(--text-secondary)' }}
-                    onClick={() => setDeletingFolderId(null)}
-                  >
-                    취소
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div
-                className="flex items-center group rounded-lg"
-                style={{ background: activeFolderId === f.id ? 'var(--accent-subtle)' : undefined }}
-              >
-                <button
-                  className="flex items-center gap-2.5 flex-1 px-2.5 py-2 rounded-lg text-sm hover:bg-gray-100 text-left transition-colors"
-                  style={{ color: activeFolderId === f.id ? 'var(--accent)' : 'var(--text-secondary)' }}
-                  onClick={() => handleFolderSelect(f.id)}
-                >
-                  <FolderOpen size={14} style={{ flexShrink: 0 }} />
-                  <span className="truncate">{f.name}</span>
-                </button>
-                <button
-                  className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 mr-1"
-                  style={{ color: 'var(--text-tertiary)' }}
-                  onClick={() => setDeletingFolderId(f.id)}
-                  aria-label={`${f.name} 삭제`}
-                >
-                  <X size={11} />
-                </button>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    </>
-  )
-
   return (
     <div className="flex h-dvh overflow-hidden" style={{ background: 'var(--bg-page)' }}>
       {/* Sidebar — desktop only */}
@@ -382,7 +433,29 @@ export function HomePage() {
         role="navigation"
         aria-label="필터"
       >
-        <SidebarContent />
+        <SidebarContent
+          activeFilter={activeFilter}
+          activeFolderId={activeFolderId}
+          activeCategoryId={activeCategoryId}
+          totalCount={links.length}
+          favoriteCount={favoriteCount}
+          recentCount={recentCount}
+          categoryCounts={categoryCounts}
+          folders={folders}
+          folderInputVisible={folderInputVisible}
+          newFolderName={newFolderName}
+          deletingFolderId={deletingFolderId}
+          onFilterChange={handleSidebarFilter}
+          onCategoryFilter={handleCategoryFilter}
+          onFolderSelect={handleFolderSelect}
+          onFolderInputOpen={() => { setFolderInputVisible(true); setNewFolderName('') }}
+          onFolderNameChange={setNewFolderName}
+          onFolderCreate={handleFolderCreate}
+          onFolderInputClose={() => { setFolderInputVisible(false); setNewFolderName('') }}
+          onDeleteRequest={setDeletingFolderId}
+          onDeleteCancel={() => setDeletingFolderId(null)}
+          onDeleteConfirm={handleFolderDelete}
+        />
       </aside>
 
       {/* Main content */}
@@ -582,7 +655,7 @@ export function HomePage() {
       {/* Mobile bottom tab bar */}
       <nav
         className="lg:hidden fixed bottom-0 left-0 right-0 flex items-center bg-white"
-        style={{ borderTop: '1px solid var(--border)', zIndex: 30 }}
+        style={{ borderTop: '1px solid var(--border)', zIndex: 30, paddingBottom: 'env(safe-area-inset-bottom)' }}
         aria-label="하단 탭"
       >
         {([

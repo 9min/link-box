@@ -149,11 +149,9 @@ export function LinkCard({ link, onOpen, onDelete, onEdit, onToggleFavorite }: L
           onClick={e => e.stopPropagation()}
         >
           <button
-            className="w-8 h-8 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-opacity"
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-opacity"
             style={{
               border: '1px solid var(--border)',
-              minWidth: '44px',
-              minHeight: '44px',
               opacity: link.isFavorite ? 1 : undefined,
             }}
             onClick={() => onToggleFavorite(link.id)}
