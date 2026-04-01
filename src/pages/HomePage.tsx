@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { LayoutGrid, List, ChevronDown, Search, Plus, X } from 'lucide-react'
+import { LayoutGrid, List, ChevronDown, Search, Plus, X, Inbox, Star, Clock, FolderOpen, Link2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Link, SortOption, ViewMode } from '@/lib/types'
 import { useLinks } from '@/hooks/useLinks'
@@ -34,6 +34,7 @@ export function HomePage() {
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null)
   const [folderInputVisible, setFolderInputVisible] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
+  const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null)
   const cardRefs = useRef<Record<string, HTMLDivElement>>({})
 
   // Keyboard shortcuts
@@ -100,6 +101,7 @@ export function HomePage() {
     unassignFolder(id)
     removeFolder(id)
     if (activeFolderId === id) setActiveFolderId(null)
+    setDeletingFolderId(null)
   }, [unassignFolder, removeFolder, activeFolderId])
 
   const handleEditSave = useCallback((id: string, patch: Partial<Link>) => {
@@ -129,6 +131,9 @@ export function HomePage() {
     ? filteredLinks.filter(l => l.folderId === activeFolderId)
     : filteredLinks
 
+  const activeFolder = folders.find(f => f.id === activeFolderId)
+  const pageTitle = activeFolder ? activeFolder.name : '모든 북마크'
+
   return (
     <div className="flex h-dvh overflow-hidden" style={{ background: 'var(--bg-page)' }}>
       {/* Sidebar — desktop only */}
@@ -138,33 +143,46 @@ export function HomePage() {
         role="navigation"
         aria-label="필터"
       >
-        <div className="mb-6">
-          <h1 className="text-base font-bold px-2" style={{ color: 'var(--accent)', letterSpacing: '-0.02em' }}>
+        {/* Logo */}
+        <div className="mb-5 px-2 flex items-center gap-2">
+          <div
+            className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+            style={{ background: 'var(--accent)' }}
+          >
+            <Link2 size={14} color="white" />
+          </div>
+          <h1 className="text-sm font-bold" style={{ color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>
             link-box
           </h1>
         </div>
 
         <div className="space-y-0.5">
           <button
-            className="flex items-center gap-2 w-full px-2 py-2 rounded-lg text-sm font-medium hover:bg-gray-100"
+            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm font-medium transition-colors"
             style={{
-              color: activeFolderId === null ? 'var(--accent)' : 'var(--text-primary)',
-              background: activeFolderId === null ? '#EFF6FF' : undefined,
+              color: activeFolderId === null ? 'var(--accent)' : 'var(--text-secondary)',
+              background: activeFolderId === null ? 'var(--accent-subtle)' : undefined,
             }}
             onClick={() => setActiveFolderId(null)}
           >
-            전체 <span className="ml-auto text-xs" style={{ color: 'var(--text-tertiary)' }}>{links.length}</span>
+            <Inbox size={15} style={{ flexShrink: 0 }} />
+            전체
+            <span className="ml-auto text-xs font-normal" style={{ color: activeFolderId === null ? 'var(--accent)' : 'var(--text-tertiary)' }}>{links.length}</span>
           </button>
           <button
-            className="flex items-center gap-2 w-full px-2 py-2 rounded-lg text-sm hover:bg-gray-100"
+            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors"
             style={{ color: 'var(--text-secondary)' }}
+            onClick={() => toast.info('즐겨찾기는 Phase 2에서 제공될 예정입니다')}
           >
+            <Star size={15} style={{ flexShrink: 0 }} />
             즐겨찾기
           </button>
           <button
-            className="flex items-center gap-2 w-full px-2 py-2 rounded-lg text-sm hover:bg-gray-100"
+            className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors"
             style={{ color: 'var(--text-secondary)' }}
+            onClick={() => toast.info('최근 7일 필터는 Phase 2에서 제공될 예정입니다')}
           >
+            <Clock size={15} style={{ flexShrink: 0 }} />
             최근 7일
           </button>
         </div>
@@ -204,26 +222,59 @@ export function HomePage() {
           )}
 
           {folders.map(f => (
-            <div
-              key={f.id}
-              className="flex items-center group rounded-lg"
-              style={{ background: activeFolderId === f.id ? '#EFF6FF' : undefined }}
-            >
-              <button
-                className="flex items-center gap-2 flex-1 px-2 py-2 rounded-lg text-sm hover:bg-gray-100 text-left"
-                style={{ color: activeFolderId === f.id ? 'var(--accent)' : 'var(--text-secondary)' }}
-                onClick={() => setActiveFolderId(activeFolderId === f.id ? null : f.id)}
-              >
-                📁 <span className="truncate">{f.name}</span>
-              </button>
-              <button
-                className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 mr-1"
-                style={{ color: 'var(--text-tertiary)' }}
-                onClick={() => handleFolderDelete(f.id)}
-                aria-label={`${f.name} 삭제`}
-              >
-                <X size={11} />
-              </button>
+            <div key={f.id}>
+              {deletingFolderId === f.id ? (
+                /* 삭제 확인 인라인 UI */
+                <div
+                  className="mx-1 px-3 py-2.5 rounded-lg text-xs"
+                  style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
+                >
+                  <p className="font-medium mb-2" style={{ color: '#991B1B' }}>
+                    "{f.name}" 폴더를 삭제할까요?
+                  </p>
+                  <p className="mb-2.5" style={{ color: '#6B7280' }}>
+                    폴더 안 링크는 삭제되지 않습니다.
+                  </p>
+                  <div className="flex gap-1.5">
+                    <button
+                      className="flex-1 px-2 py-1 rounded text-xs font-medium"
+                      style={{ background: '#DC2626', color: 'white' }}
+                      onClick={() => handleFolderDelete(f.id)}
+                    >
+                      삭제
+                    </button>
+                    <button
+                      className="flex-1 px-2 py-1 rounded text-xs font-medium"
+                      style={{ background: '#F3F4F6', color: 'var(--text-secondary)' }}
+                      onClick={() => setDeletingFolderId(null)}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="flex items-center group rounded-lg"
+                  style={{ background: activeFolderId === f.id ? 'var(--accent-subtle)' : undefined }}
+                >
+                  <button
+                    className="flex items-center gap-2.5 flex-1 px-2.5 py-2 rounded-lg text-sm hover:bg-gray-100 text-left transition-colors"
+                    style={{ color: activeFolderId === f.id ? 'var(--accent)' : 'var(--text-secondary)' }}
+                    onClick={() => setActiveFolderId(activeFolderId === f.id ? null : f.id)}
+                  >
+                    <FolderOpen size={14} style={{ flexShrink: 0 }} />
+                    <span className="truncate">{f.name}</span>
+                  </button>
+                  <button
+                    className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 mr-1"
+                    style={{ color: 'var(--text-tertiary)' }}
+                    onClick={() => setDeletingFolderId(f.id)}
+                    aria-label={`${f.name} 삭제`}
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -233,16 +284,25 @@ export function HomePage() {
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header
-          className="flex items-center justify-between px-4 py-3 flex-shrink-0"
+          className="flex items-center gap-3 px-5 py-3 flex-shrink-0"
           style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg-card)' }}
         >
           {/* Mobile logo */}
-          <h1 className="lg:hidden text-sm font-bold" style={{ color: 'var(--accent)' }}>
-            link-box
-          </h1>
+          <div className="lg:hidden flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md flex items-center justify-center" style={{ background: 'var(--accent)' }}>
+              <Link2 size={12} color="white" />
+            </div>
+            <h1 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>link-box</h1>
+          </div>
+
+          {/* Desktop page title */}
+          <div className="hidden lg:block flex-1 min-w-0">
+            <h2 className="text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>{pageTitle}</h2>
+            <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{displayLinks.length}개</p>
+          </div>
 
           {/* Right controls */}
-          <div className="flex items-center gap-2 ml-auto">
+          <div className="flex items-center gap-1 ml-auto lg:ml-0">
             {/* Search button */}
             <button
               onClick={() => setSearchOpen(true)}
@@ -308,7 +368,7 @@ export function HomePage() {
         </header>
 
         {/* Content area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-5">
           {displayLinks.length === 0 ? (
             <EmptyState
               isSearchEmpty={hasQuery}
@@ -340,14 +400,16 @@ export function HomePage() {
             </div>
           ) : (
             <div
-              className="space-y-0.5"
+              className="bg-white rounded-xl overflow-hidden"
+              style={{ border: '1px solid var(--border)', boxShadow: 'var(--shadow-sm)' }}
               role="feed"
               aria-label="저장된 링크"
             >
-              {displayLinks.map(link => (
+              {displayLinks.map((link, idx) => (
                 <div
                   key={link.id}
                   ref={el => { if (el) cardRefs.current[link.id] = el }}
+                  className={idx === displayLinks.length - 1 ? '[&>div]:border-b-0' : ''}
                 >
                   <LinkListRow
                     link={link}
