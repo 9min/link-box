@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { MoreHorizontal, Trash2, Pencil, Eye } from 'lucide-react'
 import type { Link } from '@/lib/types'
 import { getCategoryById } from '@/lib/categories'
+import { getDisplayLabel } from '@/lib/utils'
 
 interface LinkCardProps {
   link: Link
@@ -94,7 +95,7 @@ export function LinkCard({ link, onOpen, onDelete, onEdit }: LinkCardProps) {
             onError={e => { e.currentTarget.style.display = 'none' }}
           />
           <span className="text-xs truncate" style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
-            {link.domain}
+            {getDisplayLabel(link.url, link.domain)}
           </span>
         </div>
 
