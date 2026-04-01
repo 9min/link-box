@@ -69,4 +69,22 @@ describe('useLinks', () => {
     const dupId = result.current.getDuplicateId('https://example.com')
     expect(dupId).toBe(link.id)
   })
+
+  it('unassignFolder sets folderId to null for all links in that folder', () => {
+    const { result } = renderHook(() => useLinks())
+    const folderId = 'folder-1'
+    const link1 = makeLink({ url: 'https://a.com', folderId })
+    const link2 = makeLink({ url: 'https://b.com', folderId })
+    const link3 = makeLink({ url: 'https://c.com', folderId: 'folder-2' })
+    act(() => {
+      result.current.addLink(link1)
+      result.current.addLink(link2)
+      result.current.addLink(link3)
+    })
+    act(() => { result.current.unassignFolder(folderId) })
+    const updated = result.current.links
+    expect(updated.find(l => l.id === link1.id)?.folderId).toBeNull()
+    expect(updated.find(l => l.id === link2.id)?.folderId).toBeNull()
+    expect(updated.find(l => l.id === link3.id)?.folderId).toBe('folder-2')
+  })
 })

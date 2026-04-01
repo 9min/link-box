@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { LayoutGrid, List, ChevronDown, Search } from 'lucide-react'
+import { LayoutGrid, List, ChevronDown, Search, Plus, X } from 'lucide-react'
 import { toast } from 'sonner'
 import type { Link, SortOption, ViewMode } from '@/lib/types'
 import { useLinks } from '@/hooks/useLinks'
@@ -21,8 +21,8 @@ const SORT_LABELS: Record<SortOption, string> = {
 }
 
 export function HomePage() {
-  const { links, addLink, removeLink, editLink, clickLink, sortOption, setSortOption, getDuplicateId } = useLinks()
-  const { folders } = useFolders()
+  const { links, addLink, removeLink, editLink, clickLink, unassignFolder, sortOption, setSortOption, getDuplicateId } = useLinks()
+  const { folders, addFolder, removeFolder } = useFolders()
   const { filteredLinks, hasQuery } = useSearch(links)
 
   const [viewMode, setViewMode] = useState<ViewMode>(() => storage.readViewMode() as ViewMode)
@@ -31,6 +31,9 @@ export function HomePage() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Link | null>(null)
   const [sortDropOpen, setSortDropOpen] = useState(false)
+  const [activeFolderId, setActiveFolderId] = useState<string | null>(null)
+  const [folderInputVisible, setFolderInputVisible] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('')
   const cardRefs = useRef<Record<string, HTMLDivElement>>({})
 
   // Keyboard shortcuts
@@ -85,6 +88,20 @@ export function HomePage() {
     setEditModalOpen(true)
   }, [])
 
+  const handleFolderCreate = useCallback(() => {
+    const name = newFolderName.trim()
+    if (!name) return
+    addFolder({ id: crypto.randomUUID(), name, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+    setNewFolderName('')
+    setFolderInputVisible(false)
+  }, [newFolderName, addFolder])
+
+  const handleFolderDelete = useCallback((id: string) => {
+    unassignFolder(id)
+    removeFolder(id)
+    if (activeFolderId === id) setActiveFolderId(null)
+  }, [unassignFolder, removeFolder, activeFolderId])
+
   const handleEditSave = useCallback((id: string, patch: Partial<Link>) => {
     editLink(id, patch)
   }, [editLink])
@@ -108,7 +125,9 @@ export function HomePage() {
     return result
   }, [addLink, getDuplicateId])
 
-  const displayLinks = filteredLinks
+  const displayLinks = activeFolderId
+    ? filteredLinks.filter(l => l.folderId === activeFolderId)
+    : filteredLinks
 
   return (
     <div className="flex h-dvh overflow-hidden" style={{ background: 'var(--bg-page)' }}>
@@ -128,7 +147,11 @@ export function HomePage() {
         <div className="space-y-0.5">
           <button
             className="flex items-center gap-2 w-full px-2 py-2 rounded-lg text-sm font-medium hover:bg-gray-100"
-            style={{ color: 'var(--text-primary)' }}
+            style={{
+              color: activeFolderId === null ? 'var(--accent)' : 'var(--text-primary)',
+              background: activeFolderId === null ? '#EFF6FF' : undefined,
+            }}
+            onClick={() => setActiveFolderId(null)}
           >
             전체 <span className="ml-auto text-xs" style={{ color: 'var(--text-tertiary)' }}>{links.length}</span>
           </button>
@@ -146,22 +169,64 @@ export function HomePage() {
           </button>
         </div>
 
-        {folders.length > 0 && (
-          <div className="mt-4">
-            <p className="px-2 mb-1 text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--text-tertiary)' }}>
+        <div className="mt-4">
+          <div className="flex items-center px-2 mb-1">
+            <p className="text-xs font-semibold uppercase tracking-wide flex-1" style={{ color: 'var(--text-tertiary)' }}>
               폴더
             </p>
-            {folders.map(f => (
-              <button
-                key={f.id}
-                className="flex items-center gap-2 w-full px-2 py-2 rounded-lg text-sm hover:bg-gray-100"
-                style={{ color: 'var(--text-secondary)' }}
-              >
-                📁 {f.name}
-              </button>
-            ))}
+            <button
+              className="w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200"
+              style={{ color: 'var(--text-tertiary)' }}
+              onClick={() => { setFolderInputVisible(true); setNewFolderName('') }}
+              aria-label="새 폴더"
+            >
+              <Plus size={12} />
+            </button>
           </div>
-        )}
+
+          {folderInputVisible && (
+            <div className="px-2 mb-1">
+              <input
+                autoFocus
+                type="text"
+                value={newFolderName}
+                onChange={e => setNewFolderName(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') handleFolderCreate()
+                  if (e.key === 'Escape') { setFolderInputVisible(false); setNewFolderName('') }
+                }}
+                onBlur={() => { if (!newFolderName.trim()) setFolderInputVisible(false) }}
+                placeholder="폴더 이름"
+                className="w-full px-2 py-1 text-sm rounded border outline-none"
+                style={{ borderColor: 'var(--border)', color: 'var(--text-primary)', fontSize: '13px' }}
+              />
+            </div>
+          )}
+
+          {folders.map(f => (
+            <div
+              key={f.id}
+              className="flex items-center group rounded-lg"
+              style={{ background: activeFolderId === f.id ? '#EFF6FF' : undefined }}
+            >
+              <button
+                className="flex items-center gap-2 flex-1 px-2 py-2 rounded-lg text-sm hover:bg-gray-100 text-left"
+                style={{ color: activeFolderId === f.id ? 'var(--accent)' : 'var(--text-secondary)' }}
+                onClick={() => setActiveFolderId(activeFolderId === f.id ? null : f.id)}
+              >
+                📁 <span className="truncate">{f.name}</span>
+              </button>
+              <button
+                className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 mr-1"
+                style={{ color: 'var(--text-tertiary)' }}
+                onClick={() => handleFolderDelete(f.id)}
+                aria-label={`${f.name} 삭제`}
+              >
+                <X size={11} />
+              </button>
+            </div>
+          ))}
+        </div>
       </aside>
 
       {/* Main content */}

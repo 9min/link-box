@@ -8,6 +8,7 @@ export interface UseLinksReturn {
   removeLink: (id: string) => void
   editLink: (id: string, patch: Partial<Link>) => void
   clickLink: (id: string) => void
+  unassignFolder: (folderId: string) => void
   sortOption: SortOption
   setSortOption: (opt: SortOption) => void
   getDuplicateId: (url: string) => string | undefined
@@ -61,6 +62,11 @@ export function useLinks(): UseLinksReturn {
     setLinks(updated)
   }, [])
 
+  const unassignFolder = useCallback((folderId: string) => {
+    const updated = storage.unassignFolderLinks(folderId)
+    setLinks(updated)
+  }, [])
+
   const setSortOption = useCallback((opt: SortOption) => {
     _setSortOption(opt)
     storage.writeSortOption(opt)
@@ -77,6 +83,7 @@ export function useLinks(): UseLinksReturn {
     removeLink,
     editLink,
     clickLink,
+    unassignFolder,
     sortOption,
     setSortOption,
     getDuplicateId,
