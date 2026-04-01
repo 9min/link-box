@@ -22,16 +22,28 @@ describe('isValidUrl', () => {
 })
 
 describe('normalizeUrl', () => {
-  it('leaves https:// URLs alone', () => {
-    expect(normalizeUrl('https://example.com')).toBe('https://example.com')
+  it('normalizes bare hostname to canonical form with trailing slash', () => {
+    expect(normalizeUrl('https://example.com')).toBe('https://example.com/')
   })
 
-  it('prepends https:// when missing', () => {
-    expect(normalizeUrl('example.com')).toBe('https://example.com')
+  it('prepends https:// when missing and normalizes', () => {
+    expect(normalizeUrl('example.com')).toBe('https://example.com/')
   })
 
-  it('trims whitespace', () => {
-    expect(normalizeUrl('  https://example.com  ')).toBe('https://example.com')
+  it('trims whitespace and normalizes', () => {
+    expect(normalizeUrl('  https://example.com  ')).toBe('https://example.com/')
+  })
+
+  it('removes default https port 443', () => {
+    expect(normalizeUrl('https://example.com:443/path')).toBe('https://example.com/path')
+  })
+
+  it('lowercases hostname', () => {
+    expect(normalizeUrl('https://EXAMPLE.COM/path')).toBe('https://example.com/path')
+  })
+
+  it('preserves path and query string', () => {
+    expect(normalizeUrl('https://example.com/a?b=1')).toBe('https://example.com/a?b=1')
   })
 })
 

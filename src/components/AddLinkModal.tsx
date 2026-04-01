@@ -9,7 +9,6 @@ interface AddLinkModalProps {
   open: boolean
   onClose: () => void
   onSave: (link: Link) => { ok: boolean; error?: string }
-  folders: { id: string; name: string }[]
 }
 
 export function AddLinkModal({ open, onClose, onSave }: AddLinkModalProps) {

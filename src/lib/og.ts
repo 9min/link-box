@@ -73,8 +73,13 @@ export function isValidUrl(url: string): boolean {
 
 export function normalizeUrl(url: string): string {
   const trimmed = url.trim()
-  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
-    return `https://${trimmed}`
+  const withScheme =
+    trimmed.startsWith('http://') || trimmed.startsWith('https://')
+      ? trimmed
+      : `https://${trimmed}`
+  try {
+    return new URL(withScheme).href
+  } catch {
+    return withScheme
   }
-  return trimmed
 }

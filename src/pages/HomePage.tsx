@@ -305,7 +305,6 @@ export function HomePage() {
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
         onSave={handleAddLinkSave}
-        folders={folders}
       />
 
       <EditLinkModal
