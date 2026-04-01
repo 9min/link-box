@@ -165,10 +165,19 @@ serve(async (req: Request) => {
         'User-Agent': 'Mozilla/5.0 (compatible; link-box-bot/1.0)',
         Accept: 'text/html',
       },
-      redirect: 'follow',
+      redirect: 'manual',
     })
 
     clearTimeout(timeout)
+
+    // Redirect — do not follow (SSRF redirect bypass prevention)
+    if (res.status >= 300 && res.status < 400) {
+      const domain = extractDomain(url)
+      return new Response(
+        JSON.stringify({ title: domain, description: '', ogImage: null, favicon: getFaviconUrl(domain), domain }),
+        { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } }
+      )
+    }
 
     if (!res.ok) {
       return new Response(

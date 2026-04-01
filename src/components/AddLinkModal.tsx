@@ -9,11 +9,10 @@ interface AddLinkModalProps {
   open: boolean
   onClose: () => void
   onSave: (link: Link) => { ok: boolean; error?: string }
-  onScrollToExisting?: (id: string) => void
   folders: { id: string; name: string }[]
 }
 
-export function AddLinkModal({ open, onClose, onSave, onScrollToExisting }: AddLinkModalProps) {
+export function AddLinkModal({ open, onClose, onSave }: AddLinkModalProps) {
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -69,18 +68,7 @@ export function AddLinkModal({ open, onClose, onSave, onScrollToExisting }: AddL
       }
 
       const result = onSave(newLink)
-      if (!result.ok && result.error === 'DUPLICATE_URL') {
-        toast.error('이미 저장된 링크입니다', {
-          action: onScrollToExisting
-            ? {
-                label: '바로 가기',
-                onClick: () => {
-                  // find duplicate id is handled by caller
-                },
-              }
-            : undefined,
-        })
-      } else if (!result.ok && result.error === 'QUOTA_EXCEEDED') {
+      if (!result.ok && result.error === 'QUOTA_EXCEEDED') {
         toast.error('저장 공간이 부족합니다')
       } else if (result.ok) {
         if (!ogData) {
