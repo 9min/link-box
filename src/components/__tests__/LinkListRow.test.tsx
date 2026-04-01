@@ -49,4 +49,12 @@ describe('LinkListRow', () => {
     fireEvent.click(screen.getByRole('row'))
     expect(onOpen).toHaveBeenCalledWith(link)
   })
+
+  it('calls onToggleFavorite when star button is clicked', () => {
+    const onToggleFavorite = vi.fn()
+    const link = makeLink({ isFavorite: false })
+    render(<LinkListRow link={link} onOpen={vi.fn()} onDelete={vi.fn()} onEdit={vi.fn()} onToggleFavorite={onToggleFavorite} />)
+    fireEvent.click(screen.getByRole('button', { name: '즐겨찾기 추가' }))
+    expect(onToggleFavorite).toHaveBeenCalledWith(link.id)
+  })
 })

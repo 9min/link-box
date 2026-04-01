@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MoreHorizontal, Trash2, Pencil, Eye } from 'lucide-react'
+import { MoreHorizontal, Trash2, Pencil, Eye, Star } from 'lucide-react'
 import type { Link } from '@/lib/types'
 import { getCategoryById } from '@/lib/categories'
 import { formatRelativeTime, getDisplayLabel, getDisplayTitle } from '@/lib/utils'
@@ -9,9 +9,10 @@ interface LinkListRowProps {
   onOpen: (link: Link) => void
   onDelete: (id: string) => void
   onEdit: (link: Link) => void
+  onToggleFavorite?: (id: string) => void
 }
 
-export function LinkListRow({ link, onOpen, onDelete, onEdit }: LinkListRowProps) {
+export function LinkListRow({ link, onOpen, onDelete, onEdit, onToggleFavorite }: LinkListRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const category = getCategoryById(link.categoryId)
 
@@ -36,6 +37,24 @@ export function LinkListRow({ link, onOpen, onDelete, onEdit }: LinkListRowProps
       role="row"
       aria-label={`${getDisplayTitle(link)} - ${link.domain}`}
     >
+      {/* Favorite button */}
+      {onToggleFavorite && (
+        <div data-menu onClick={e => e.stopPropagation()}>
+          <button
+            className="w-11 h-11 flex items-center justify-center rounded flex-shrink-0"
+            onClick={() => onToggleFavorite(link.id)}
+            aria-label={link.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+            aria-pressed={link.isFavorite}
+          >
+            <Star
+              size={13}
+              fill={link.isFavorite ? '#F59E0B' : 'none'}
+              color={link.isFavorite ? '#F59E0B' : 'var(--text-tertiary)'}
+            />
+          </button>
+        </div>
+      )}
+
       {/* Favicon */}
       <img
         src={link.favicon}

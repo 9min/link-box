@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { MoreHorizontal, Trash2, Pencil, Eye } from 'lucide-react'
+import { MoreHorizontal, Trash2, Pencil, Eye, Star } from 'lucide-react'
 import type { Link } from '@/lib/types'
 import { getCategoryById } from '@/lib/categories'
 import { getDisplayLabel, getDisplayTitle } from '@/lib/utils'
@@ -9,6 +9,7 @@ interface LinkCardProps {
   onOpen: (link: Link) => void
   onDelete: (id: string) => void
   onEdit: (link: Link) => void
+  onToggleFavorite?: (id: string) => void
 }
 
 function OgImage({ link }: { link: Link }) {
@@ -44,7 +45,7 @@ function OgImage({ link }: { link: Link }) {
   )
 }
 
-export function LinkCard({ link, onOpen, onDelete, onEdit }: LinkCardProps) {
+export function LinkCard({ link, onOpen, onDelete, onEdit, onToggleFavorite }: LinkCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const category = getCategoryById(link.categoryId)
 
@@ -139,6 +140,32 @@ export function LinkCard({ link, onOpen, onDelete, onEdit }: LinkCardProps) {
           )}
         </div>
       </div>
+
+      {/* Favorite button */}
+      {onToggleFavorite && (
+        <div
+          data-menu
+          className="absolute top-2 left-2"
+          onClick={e => e.stopPropagation()}
+        >
+          <button
+            className="w-11 h-11 flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm transition-opacity"
+            style={{
+              border: '1px solid var(--border)',
+              opacity: link.isFavorite ? 1 : undefined,
+            }}
+            onClick={() => onToggleFavorite(link.id)}
+            aria-label={link.isFavorite ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+            aria-pressed={link.isFavorite}
+          >
+            <Star
+              size={13}
+              fill={link.isFavorite ? '#F59E0B' : 'none'}
+              color={link.isFavorite ? '#F59E0B' : 'var(--text-tertiary)'}
+            />
+          </button>
+        </div>
+      )}
 
       {/* Three-dot menu */}
       <div
