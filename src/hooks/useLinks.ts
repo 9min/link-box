@@ -8,6 +8,7 @@ export interface UseLinksReturn {
   removeLink: (id: string) => void
   editLink: (id: string, patch: Partial<Link>) => void
   clickLink: (id: string) => void
+  toggleFavorite: (id: string) => void
   unassignFolder: (folderId: string) => void
   sortOption: SortOption
   setSortOption: (opt: SortOption) => void
@@ -62,6 +63,16 @@ export function useLinks(): UseLinksReturn {
     setLinks(updated)
   }, [])
 
+  const toggleFavorite = useCallback((id: string) => {
+    const link = links.find(l => l.id === id)
+    if (!link) return
+    const updated = storage.updateLink(id, {
+      isFavorite: !link.isFavorite,
+      updatedAt: new Date().toISOString(),
+    })
+    setLinks(updated)
+  }, [links])
+
   const unassignFolder = useCallback((folderId: string) => {
     const updated = storage.unassignFolderLinks(folderId)
     setLinks(updated)
@@ -83,6 +94,7 @@ export function useLinks(): UseLinksReturn {
     removeLink,
     editLink,
     clickLink,
+    toggleFavorite,
     unassignFolder,
     sortOption,
     setSortOption,
