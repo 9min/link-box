@@ -87,6 +87,18 @@ function decodeHtmlEntities(str: string): string {
     .replace(/&apos;/g, "'")
 }
 
+function isPrivateHost(hostname: string): boolean {
+  const h = hostname.toLowerCase()
+  if (h === 'localhost' || h === '127.0.0.1' || h === '::1') return true
+  if (h.startsWith('10.')) return true
+  if (h.startsWith('192.168.')) return true
+  if (/^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true
+  if (h === '169.254.169.254') return true // AWS/GCP metadata
+  if (h.startsWith('fd') || h.startsWith('fc')) return true // IPv6 ULA
+  if (h.endsWith('.local') || h.endsWith('.internal')) return true
+  return false
+}
+
 serve(async (req: Request) => {
   const origin = req.headers.get('origin') ?? ''
   const headers = corsHeaders(origin)
@@ -120,7 +132,7 @@ serve(async (req: Request) => {
     })
   }
 
-  // Validate URL — only https allowed
+  // Validate URL — only http/https allowed
   let parsed: URL
   try {
     parsed = new URL(url)
@@ -128,6 +140,14 @@ serve(async (req: Request) => {
       throw new Error('Invalid protocol')
     }
   } catch {
+    return new Response(JSON.stringify({ error: 'Invalid URL' }), {
+      status: 400,
+      headers: { ...headers, 'Content-Type': 'application/json' },
+    })
+  }
+
+  // Block SSRF — reject private/internal network ranges
+  if (isPrivateHost(parsed.hostname)) {
     return new Response(JSON.stringify({ error: 'Invalid URL' }), {
       status: 400,
       headers: { ...headers, 'Content-Type': 'application/json' },
