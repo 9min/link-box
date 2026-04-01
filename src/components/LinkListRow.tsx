@@ -57,7 +57,7 @@ export function LinkListRow({ link, onOpen, onDelete, onEdit }: LinkListRowProps
 
       {/* Domain */}
       <span
-        className="hidden sm:block text-xs w-28 truncate flex-shrink-0"
+        className="hidden sm:block text-xs max-w-[200px] truncate flex-shrink-0"
         style={{ color: 'var(--text-secondary)', fontSize: '12px' }}
       >
         {getDisplayLabel(link.url, link.domain)}

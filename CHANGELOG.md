@@ -2,6 +2,16 @@
 
 All notable changes to link-box are documented here.
 
+## [0.0.2.0] - 2026-04-01
+
+### Fixed
+- List view domain column now uses `max-w-[200px]` instead of fixed `w-28`, preventing path-extended labels like `github.com/org/repo` from truncating
+
+### Added
+- `getDisplayLabel(url, domain)` utility — shows path context for code/package hosting domains (github.com, gitlab.com, npmjs.com, pypi.org, crates.io, pkg.go.dev, hub.docker.com, gist.github.com)
+- Card and list views now display `github.com/org/repo` instead of just `github.com`
+- 6 new unit tests covering `getDisplayLabel` (path domains, fallback, empty path, URL parse failure)
+
 ## [0.1.0.0] - 2026-04-01
 
 ### Added
