@@ -29,7 +29,7 @@ export function LinkListRow({ link, onOpen, onDelete, onEdit }: LinkListRowProps
 
   return (
     <div
-      className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 cursor-pointer relative group border-b border-gray-100 last:border-b-0"
+      className="flex items-center gap-3 px-4 py-3.5 hover:bg-gray-50 cursor-pointer relative group border-b border-gray-100"
       onClick={handleRowClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}

@@ -34,6 +34,7 @@ export function HomePage() {
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null)
   const [folderInputVisible, setFolderInputVisible] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
+  const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null)
   const cardRefs = useRef<Record<string, HTMLDivElement>>({})
 
   // Keyboard shortcuts
@@ -100,6 +101,7 @@ export function HomePage() {
     unassignFolder(id)
     removeFolder(id)
     if (activeFolderId === id) setActiveFolderId(null)
+    setDeletingFolderId(null)
   }, [unassignFolder, removeFolder, activeFolderId])
 
   const handleEditSave = useCallback((id: string, patch: Partial<Link>) => {
@@ -170,6 +172,7 @@ export function HomePage() {
           <button
             className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors"
             style={{ color: 'var(--text-secondary)' }}
+            onClick={() => toast.info('즐겨찾기는 Phase 2에서 제공될 예정입니다')}
           >
             <Star size={15} style={{ flexShrink: 0 }} />
             즐겨찾기
@@ -177,6 +180,7 @@ export function HomePage() {
           <button
             className="flex items-center gap-2.5 w-full px-2.5 py-2 rounded-lg text-sm hover:bg-gray-100 transition-colors"
             style={{ color: 'var(--text-secondary)' }}
+            onClick={() => toast.info('최근 7일 필터는 Phase 2에서 제공될 예정입니다')}
           >
             <Clock size={15} style={{ flexShrink: 0 }} />
             최근 7일
@@ -218,27 +222,59 @@ export function HomePage() {
           )}
 
           {folders.map(f => (
-            <div
-              key={f.id}
-              className="flex items-center group rounded-lg"
-              style={{ background: activeFolderId === f.id ? 'var(--accent-subtle)' : undefined }}
-            >
-              <button
-                className="flex items-center gap-2.5 flex-1 px-2.5 py-2 rounded-lg text-sm hover:bg-gray-100 text-left transition-colors"
-                style={{ color: activeFolderId === f.id ? 'var(--accent)' : 'var(--text-secondary)' }}
-                onClick={() => setActiveFolderId(activeFolderId === f.id ? null : f.id)}
-              >
-                <FolderOpen size={14} style={{ flexShrink: 0 }} />
-                <span className="truncate">{f.name}</span>
-              </button>
-              <button
-                className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 mr-1"
-                style={{ color: 'var(--text-tertiary)' }}
-                onClick={() => handleFolderDelete(f.id)}
-                aria-label={`${f.name} 삭제`}
-              >
-                <X size={11} />
-              </button>
+            <div key={f.id}>
+              {deletingFolderId === f.id ? (
+                /* 삭제 확인 인라인 UI */
+                <div
+                  className="mx-1 px-3 py-2.5 rounded-lg text-xs"
+                  style={{ background: '#FEF2F2', border: '1px solid #FECACA' }}
+                >
+                  <p className="font-medium mb-2" style={{ color: '#991B1B' }}>
+                    "{f.name}" 폴더를 삭제할까요?
+                  </p>
+                  <p className="mb-2.5" style={{ color: '#6B7280' }}>
+                    폴더 안 링크는 삭제되지 않습니다.
+                  </p>
+                  <div className="flex gap-1.5">
+                    <button
+                      className="flex-1 px-2 py-1 rounded text-xs font-medium"
+                      style={{ background: '#DC2626', color: 'white' }}
+                      onClick={() => handleFolderDelete(f.id)}
+                    >
+                      삭제
+                    </button>
+                    <button
+                      className="flex-1 px-2 py-1 rounded text-xs font-medium"
+                      style={{ background: '#F3F4F6', color: 'var(--text-secondary)' }}
+                      onClick={() => setDeletingFolderId(null)}
+                    >
+                      취소
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="flex items-center group rounded-lg"
+                  style={{ background: activeFolderId === f.id ? 'var(--accent-subtle)' : undefined }}
+                >
+                  <button
+                    className="flex items-center gap-2.5 flex-1 px-2.5 py-2 rounded-lg text-sm hover:bg-gray-100 text-left transition-colors"
+                    style={{ color: activeFolderId === f.id ? 'var(--accent)' : 'var(--text-secondary)' }}
+                    onClick={() => setActiveFolderId(activeFolderId === f.id ? null : f.id)}
+                  >
+                    <FolderOpen size={14} style={{ flexShrink: 0 }} />
+                    <span className="truncate">{f.name}</span>
+                  </button>
+                  <button
+                    className="w-6 h-6 flex-shrink-0 flex items-center justify-center rounded opacity-0 group-hover:opacity-100 mr-1"
+                    style={{ color: 'var(--text-tertiary)' }}
+                    onClick={() => setDeletingFolderId(f.id)}
+                    aria-label={`${f.name} 삭제`}
+                  >
+                    <X size={11} />
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -369,10 +405,11 @@ export function HomePage() {
               role="feed"
               aria-label="저장된 링크"
             >
-              {displayLinks.map(link => (
+              {displayLinks.map((link, idx) => (
                 <div
                   key={link.id}
                   ref={el => { if (el) cardRefs.current[link.id] = el }}
+                  className={idx === displayLinks.length - 1 ? '[&>div]:border-b-0' : ''}
                 >
                   <LinkListRow
                     link={link}
