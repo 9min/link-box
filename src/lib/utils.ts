@@ -27,3 +27,28 @@ export function debounce<T extends (...args: unknown[]) => void>(
     timer = setTimeout(() => fn(...args), delay)
   }
 }
+
+// Domains where the path after the hostname gives meaningful context.
+// Value = number of path segments to include (e.g. github.com/org/repo = 2).
+const PATH_DOMAINS: Record<string, number> = {
+  'github.com': 2,
+  'gitlab.com': 2,
+  'gist.github.com': 2,
+  'npmjs.com': 2,
+  'pypi.org': 2,
+  'crates.io': 2,
+  'pkg.go.dev': 2,
+  'hub.docker.com': 3,
+}
+
+export function getDisplayLabel(url: string, domain: string): string {
+  const depth = PATH_DOMAINS[domain]
+  if (!depth) return domain
+  try {
+    const segments = new URL(url).pathname.split('/').filter(Boolean).slice(0, depth)
+    if (segments.length === 0) return domain
+    return `${domain}/${segments.join('/')}`
+  } catch {
+    return domain
+  }
+}
