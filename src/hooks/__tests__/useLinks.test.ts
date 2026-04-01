@@ -70,6 +70,16 @@ describe('useLinks', () => {
     expect(dupId).toBe(link.id)
   })
 
+  it('toggleFavorite flips isFavorite', () => {
+    const { result } = renderHook(() => useLinks())
+    const link = makeLink({ isFavorite: false })
+    act(() => { result.current.addLink(link) })
+    act(() => { result.current.toggleFavorite(link.id) })
+    expect(result.current.links[0].isFavorite).toBe(true)
+    act(() => { result.current.toggleFavorite(link.id) })
+    expect(result.current.links[0].isFavorite).toBe(false)
+  })
+
   it('unassignFolder sets folderId to null for all links in that folder', () => {
     const { result } = renderHook(() => useLinks())
     const folderId = 'folder-1'

@@ -44,4 +44,24 @@ describe('LinkCard', () => {
     render(<LinkCard link={link} {...defaultProps} />)
     expect(screen.getByRole('article')).toHaveAttribute('aria-label', 'My Link - example.com')
   })
+
+  it('calls onToggleFavorite when star button is clicked', () => {
+    const onToggleFavorite = vi.fn()
+    const link = makeLink({ isFavorite: false })
+    render(<LinkCard link={link} {...defaultProps} onToggleFavorite={onToggleFavorite} />)
+    fireEvent.click(screen.getByRole('button', { name: '즐겨찾기 추가' }))
+    expect(onToggleFavorite).toHaveBeenCalledWith(link.id)
+  })
+
+  it('shows filled star for favorite links', () => {
+    const link = makeLink({ isFavorite: true })
+    render(<LinkCard link={link} {...defaultProps} onToggleFavorite={vi.fn()} />)
+    expect(screen.getByRole('button', { name: '즐겨찾기 해제' })).toBeInTheDocument()
+  })
+
+  it('does not render star button when onToggleFavorite not provided', () => {
+    const link = makeLink({ isFavorite: false })
+    render(<LinkCard link={link} {...defaultProps} />)
+    expect(screen.queryByRole('button', { name: '즐겨찾기 추가' })).not.toBeInTheDocument()
+  })
 })
