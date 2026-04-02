@@ -14,15 +14,22 @@ export function AuthButton() {
     return (
       <div className="flex items-center gap-2 px-2 py-2 border-t" style={{ borderColor: 'var(--border)' }}>
         {avatarUrl ? (
-          <img src={avatarUrl} alt={name} className="w-6 h-6 rounded-full flex-shrink-0" />
-        ) : (
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background: 'var(--accent)', color: 'white', fontSize: '11px', fontWeight: 600 }}
-          >
-            <User size={12} />
-          </div>
-        )}
+          <img
+            src={avatarUrl}
+            alt={name}
+            className="w-6 h-6 rounded-full flex-shrink-0"
+            onError={e => {
+              e.currentTarget.style.display = 'none'
+              e.currentTarget.nextElementSibling?.removeAttribute('style')
+            }}
+          />
+        ) : null}
+        <div
+          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+          style={{ background: 'var(--accent)', color: 'white', display: avatarUrl ? 'none' : undefined }}
+        >
+          <User size={12} />
+        </div>
         <span
           className="text-xs flex-1 truncate"
           style={{ color: 'var(--text-secondary)' }}
@@ -74,15 +81,22 @@ export function AuthIconButton() {
         style={{ minWidth: '44px', minHeight: '44px' }}
       >
         {avatarUrl ? (
-          <img src={avatarUrl} alt={name} className="w-7 h-7 rounded-full" />
-        ) : (
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: 'var(--accent)', color: 'white' }}
-          >
-            <User size={14} />
-          </div>
-        )}
+          <img
+            src={avatarUrl}
+            alt={name}
+            className="w-7 h-7 rounded-full"
+            onError={e => {
+              e.currentTarget.style.display = 'none'
+              e.currentTarget.nextElementSibling?.removeAttribute('style')
+            }}
+          />
+        ) : null}
+        <div
+          className="w-7 h-7 rounded-full flex items-center justify-center"
+          style={{ background: 'var(--accent)', color: 'white', display: avatarUrl ? 'none' : undefined }}
+        >
+          <User size={14} />
+        </div>
       </button>
     )
   }
