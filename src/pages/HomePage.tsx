@@ -261,10 +261,6 @@ function SidebarContent({
         ))}
       </div>
 
-      {/* Auth — pinned to bottom of sidebar */}
-      <div className="mt-auto pt-3">
-        <AuthButton />
-      </div>
     </>
   )
 }
@@ -443,34 +439,41 @@ export function HomePage() {
     <div className="flex h-dvh overflow-hidden" style={{ background: 'var(--bg-page)' }}>
       {/* Sidebar — desktop only */}
       <aside
-        className="hidden lg:flex flex-col w-60 flex-shrink-0 h-full overflow-y-auto py-4 px-3"
+        className="hidden lg:flex flex-col w-60 flex-shrink-0 h-full"
         style={{ background: 'var(--bg-sidebar)', borderRight: '1px solid var(--border)' }}
         role="navigation"
         aria-label="필터"
       >
-        <SidebarContent
-          activeFilter={activeFilter}
-          activeFolderId={activeFolderId}
-          activeCategoryId={activeCategoryId}
-          totalCount={links.length}
-          favoriteCount={favoriteCount}
-          recentCount={recentCount}
-          categoryCounts={categoryCounts}
-          folders={folders}
-          folderInputVisible={folderInputVisible}
-          newFolderName={newFolderName}
-          deletingFolderId={deletingFolderId}
-          onFilterChange={handleSidebarFilter}
-          onCategoryFilter={handleCategoryFilter}
-          onFolderSelect={handleFolderSelect}
-          onFolderInputOpen={() => { setFolderInputVisible(true); setNewFolderName('') }}
-          onFolderNameChange={setNewFolderName}
-          onFolderCreate={handleFolderCreate}
-          onFolderInputClose={() => { setFolderInputVisible(false); setNewFolderName('') }}
-          onDeleteRequest={setDeletingFolderId}
-          onDeleteCancel={() => setDeletingFolderId(null)}
-          onDeleteConfirm={handleFolderDelete}
-        />
+        {/* Scrollable content */}
+        <div className="flex-1 overflow-y-auto py-4 px-3 min-h-0">
+          <SidebarContent
+            activeFilter={activeFilter}
+            activeFolderId={activeFolderId}
+            activeCategoryId={activeCategoryId}
+            totalCount={links.length}
+            favoriteCount={favoriteCount}
+            recentCount={recentCount}
+            categoryCounts={categoryCounts}
+            folders={folders}
+            folderInputVisible={folderInputVisible}
+            newFolderName={newFolderName}
+            deletingFolderId={deletingFolderId}
+            onFilterChange={handleSidebarFilter}
+            onCategoryFilter={handleCategoryFilter}
+            onFolderSelect={handleFolderSelect}
+            onFolderInputOpen={() => { setFolderInputVisible(true); setNewFolderName('') }}
+            onFolderNameChange={setNewFolderName}
+            onFolderCreate={handleFolderCreate}
+            onFolderInputClose={() => { setFolderInputVisible(false); setNewFolderName('') }}
+            onDeleteRequest={setDeletingFolderId}
+            onDeleteCancel={() => setDeletingFolderId(null)}
+            onDeleteConfirm={handleFolderDelete}
+          />
+        </div>
+        {/* Fixed bottom — always visible */}
+        <div className="flex-shrink-0 px-3 pb-3">
+          <AuthButton />
+        </div>
       </aside>
 
       {/* Main content */}
