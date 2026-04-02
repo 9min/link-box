@@ -71,7 +71,7 @@ export function useLinks(userId: string | null): UseLinksReturn {
     if (!userId) return
 
     const channel = supabase
-      .channel('links-realtime')
+      .channel(`links-realtime-${userId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'links', filter: `user_id=eq.${userId}` },

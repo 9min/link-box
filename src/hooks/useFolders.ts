@@ -38,7 +38,7 @@ export function useFolders(userId: string | null): UseFoldersReturn {
     if (!userId) return
 
     const channel = supabase
-      .channel('folders-realtime')
+      .channel(`folders-realtime-${userId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'folders', filter: `user_id=eq.${userId}` },
