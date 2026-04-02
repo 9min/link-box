@@ -1,5 +1,35 @@
+import { useState, useEffect, useCallback } from 'react'
 import { LogIn, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+
+function UserAvatar({ url, name, size }: { url: string | undefined; name: string; size: 'sm' | 'md' }) {
+  const [imgError, setImgError] = useState(false)
+  const px = size === 'sm' ? 'w-6 h-6' : 'w-7 h-7'
+  const iconSize = size === 'sm' ? 12 : 14
+
+  // Reset error state when url changes (e.g. user switches account)
+  useEffect(() => { setImgError(false) }, [url])
+
+  if (url && !imgError) {
+    return (
+      <img
+        src={url}
+        alt={name}
+        className={`${px} rounded-full flex-shrink-0`}
+        onError={() => setImgError(true)}
+      />
+    )
+  }
+
+  return (
+    <div
+      className={`${px} rounded-full flex items-center justify-center flex-shrink-0`}
+      style={{ background: 'var(--accent)', color: 'white' }}
+    >
+      <User size={iconSize} />
+    </div>
+  )
+}
 
 // Full version — used in the desktop sidebar
 export function AuthButton() {
@@ -13,16 +43,7 @@ export function AuthButton() {
 
     return (
       <div className="flex items-center gap-2 px-2 py-2 border-t" style={{ borderColor: 'var(--border)' }}>
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={name} className="w-6 h-6 rounded-full flex-shrink-0" />
-        ) : (
-          <div
-            className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background: 'var(--accent)', color: 'white', fontSize: '11px', fontWeight: 600 }}
-          >
-            <User size={12} />
-          </div>
-        )}
+        <UserAvatar url={avatarUrl} name={name} size="sm" />
         <span
           className="text-xs flex-1 truncate"
           style={{ color: 'var(--text-secondary)' }}
@@ -31,7 +52,7 @@ export function AuthButton() {
           {name}
         </span>
         <button
-          onClick={signOut}
+          onClick={() => void signOut()}
           className="p-1 rounded hover:bg-gray-100 flex-shrink-0"
           aria-label="로그아웃"
           title="로그아웃"
@@ -58,6 +79,11 @@ export function AuthButton() {
 // Compact icon version — used in the mobile header
 export function AuthIconButton() {
   const { user, loading, signInWithGoogle, signOut } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') setMenuOpen(false)
+  }, [])
 
   if (loading) return null
 
@@ -66,36 +92,65 @@ export function AuthIconButton() {
     const avatarUrl = user.user_metadata?.avatar_url as string | undefined
 
     return (
-      <button
-        onClick={signOut}
-        className="flex items-center justify-center rounded-full"
-        aria-label="로그아웃"
-        title={`${name} — 로그아웃`}
-        style={{ minWidth: '44px', minHeight: '44px' }}
-      >
-        {avatarUrl ? (
-          <img src={avatarUrl} alt={name} className="w-7 h-7 rounded-full" />
-        ) : (
-          <div
-            className="w-7 h-7 rounded-full flex items-center justify-center"
-            style={{ background: 'var(--accent)', color: 'white' }}
-          >
-            <User size={14} />
-          </div>
+      <div className="relative" onKeyDown={handleKeyDown}>
+        <button
+          onClick={() => setMenuOpen(v => !v)}
+          className="flex items-center justify-center rounded-full"
+          aria-label="계정 메뉴"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          style={{ minWidth: '44px', minHeight: '44px' }}
+        >
+          <UserAvatar url={avatarUrl} name={name} size="md" />
+        </button>
+        {menuOpen && (
+          <>
+            {/* backdrop */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setMenuOpen(false)}
+              role="presentation"
+              aria-hidden="true"
+            />
+            {/* dropdown */}
+            <div
+              className="absolute right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-lg py-1 min-w-[160px]"
+              style={{ border: '1px solid var(--border)' }}
+              role="menu"
+            >
+              <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{name}</p>
+              </div>
+              <button
+                onClick={() => { setMenuOpen(false); void signOut() }}
+                className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-gray-50"
+                style={{ color: 'var(--text-secondary)' }}
+                role="menuitem"
+              >
+                <LogOut size={14} />
+                로그아웃
+              </button>
+            </div>
+          </>
         )}
-      </button>
+      </div>
     )
   }
 
   return (
     <button
       onClick={signInWithGoogle}
-      className="p-2 rounded-lg hover:bg-gray-100 flex items-center justify-center"
+      className="flex items-center justify-center rounded-full"
       aria-label="Google로 로그인"
       title="Google로 로그인"
-      style={{ minWidth: '44px', minHeight: '44px', color: 'var(--text-secondary)' }}
+      style={{ minWidth: '44px', minHeight: '44px' }}
     >
-      <LogIn size={16} />
+      <div
+        className="w-7 h-7 rounded-full flex items-center justify-center"
+        style={{ background: 'var(--border)', color: 'var(--text-tertiary)' }}
+      >
+        <User size={14} />
+      </div>
     </button>
   )
 }

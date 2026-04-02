@@ -75,15 +75,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signInWithGoogle = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: {
+        redirectTo: window.location.origin,
+        queryParams: { prompt: 'select_account' },
+      },
     })
     if (error) toast.error('로그인에 실패했습니다')
   }, [])
 
   const signOut = useCallback(async () => {
     const { error } = await supabase.auth.signOut()
+    // Always clear local state regardless of API error
+    setSession(null)
+    setUser(null)
     if (error) {
-      toast.error('로그아웃에 실패했습니다')
+      // Server-side session invalidation failed, but local session is cleared.
+      // Log only in dev to avoid leaking session info in production.
+      if (import.meta.env.DEV) {
+        console.warn('signOut API error (local session cleared anyway):', error.status, error.message)
+      }
+      toast.success('로그아웃 되었습니다') // local session cleared — UX success
     } else {
       toast.success('로그아웃 되었습니다')
     }
