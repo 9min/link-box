@@ -50,6 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               if (links > 0 || folders > 0) {
                 toast.success(`${links}개 링크, ${folders}개 폴더를 클라우드로 이전했습니다`)
               }
+              // Data is now safely in Supabase — clear local cache so logout
+              // shows a clean state instead of stale pre-migration data.
+              localStorage_.clearLinks()
+              localStorage_.clearFolders()
             } catch {
               toast.error('데이터 이전 중 오류가 발생했습니다')
             }
