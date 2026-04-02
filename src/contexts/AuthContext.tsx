@@ -21,23 +21,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Load initial session
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
-        setSession(session)
-        setUser(session?.user ?? null)
-      })
-      .catch(() => {/* ignore — show unauthenticated state */})
-      .finally(() => setLoading(false))
+    // onAuthStateChange fires INITIAL_SESSION immediately from localStorage —
+    // no network request needed. This is robust against createClient failures.
+    let initialized = false
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session)
         setUser(session?.user ?? null)
 
+        // Clear loading on first event regardless of type
+        if (!initialized) {
+          initialized = true
+          setLoading(false)
+        }
+
         if (event === 'SIGNED_IN' && session?.user) {
-          // Migrate localStorage data on first login
           const localLinks = localStorage_.readLinks()
           const localFolders = localStorage_.readFolders()
 
@@ -59,19 +58,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    // Safety fallback: if onAuthStateChange never fires within 3s, unblock UI
+    const fallback = setTimeout(() => {
+      if (!initialized) {
+        initialized = true
+        setLoading(false)
+      }
+    }, 3000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(fallback)
+    }
   }, [])
 
   const signInWithGoogle = useCallback(async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-      },
+      options: { redirectTo: window.location.origin },
     })
-    if (error) {
-      toast.error('로그인에 실패했습니다')
-    }
+    if (error) toast.error('로그인에 실패했습니다')
   }, [])
 
   const signOut = useCallback(async () => {
