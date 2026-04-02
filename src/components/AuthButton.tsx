@@ -76,6 +76,7 @@ export function AuthButton() {
 // Compact icon version — used in the mobile header
 export function AuthIconButton() {
   const { user, loading, signInWithGoogle, signOut } = useAuth()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   if (loading) return null
 
@@ -84,15 +85,42 @@ export function AuthIconButton() {
     const avatarUrl = user.user_metadata?.avatar_url as string | undefined
 
     return (
-      <button
-        onClick={signOut}
-        className="flex items-center justify-center rounded-full"
-        aria-label="로그아웃"
-        title={`${name} — 로그아웃`}
-        style={{ minWidth: '44px', minHeight: '44px' }}
-      >
-        <UserAvatar url={avatarUrl} name={name} size="md" />
-      </button>
+      <div className="relative">
+        <button
+          onClick={() => setMenuOpen(v => !v)}
+          className="flex items-center justify-center rounded-full"
+          aria-label="계정 메뉴"
+          style={{ minWidth: '44px', minHeight: '44px' }}
+        >
+          <UserAvatar url={avatarUrl} name={name} size="md" />
+        </button>
+        {menuOpen && (
+          <>
+            {/* backdrop */}
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setMenuOpen(false)}
+            />
+            {/* dropdown */}
+            <div
+              className="absolute right-0 top-12 z-50 bg-white rounded-xl shadow-lg py-1 min-w-[160px]"
+              style={{ border: '1px solid var(--border)' }}
+            >
+              <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{name}</p>
+              </div>
+              <button
+                onClick={() => { setMenuOpen(false); void signOut() }}
+                className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-gray-50"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                <LogOut size={14} />
+                로그아웃
+              </button>
+            </div>
+          </>
+        )}
+      </div>
     )
   }
 
