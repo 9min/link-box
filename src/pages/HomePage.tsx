@@ -14,7 +14,7 @@ import { AddLinkModal } from '@/components/AddLinkModal'
 import { EditLinkModal } from '@/components/EditLinkModal'
 import { SearchOverlay } from '@/components/SearchOverlay'
 import { EmptyState } from '@/components/EmptyState'
-import { AuthButton } from '@/components/AuthButton'
+import { AuthButton, AuthIconButton } from '@/components/AuthButton'
 import * as storage from '@/lib/storage'
 
 const SORT_LABELS: Record<SortOption, string> = {
@@ -496,6 +496,11 @@ export function HomePage() {
 
           {/* Right controls */}
           <div className="flex items-center gap-1 ml-auto lg:ml-0">
+            {/* Auth icon — mobile only */}
+            <div className="lg:hidden">
+              <AuthIconButton />
+            </div>
+
             {/* Search button */}
             <button
               onClick={() => setSearchOpen(true)}

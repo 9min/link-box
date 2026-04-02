@@ -1,6 +1,7 @@
 import { LogIn, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
+// Full version — used in the desktop sidebar
 export function AuthButton() {
   const { user, loading, signInWithGoogle, signOut } = useAuth()
 
@@ -45,11 +46,56 @@ export function AuthButton() {
   return (
     <button
       onClick={signInWithGoogle}
-      className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-sm transition-colors hover:bg-gray-100 mt-auto"
+      className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-sm transition-colors hover:bg-gray-100"
       style={{ color: 'var(--text-secondary)', border: '1px solid var(--border)' }}
     >
       <LogIn size={14} />
       <span>Google로 로그인</span>
+    </button>
+  )
+}
+
+// Compact icon version — used in the mobile header
+export function AuthIconButton() {
+  const { user, loading, signInWithGoogle, signOut } = useAuth()
+
+  if (loading) return null
+
+  if (user) {
+    const name = user.user_metadata?.full_name ?? user.email ?? '사용자'
+    const avatarUrl = user.user_metadata?.avatar_url as string | undefined
+
+    return (
+      <button
+        onClick={signOut}
+        className="flex items-center justify-center rounded-full"
+        aria-label="로그아웃"
+        title={`${name} — 로그아웃`}
+        style={{ minWidth: '44px', minHeight: '44px' }}
+      >
+        {avatarUrl ? (
+          <img src={avatarUrl} alt={name} className="w-7 h-7 rounded-full" />
+        ) : (
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ background: 'var(--accent)', color: 'white' }}
+          >
+            <User size={14} />
+          </div>
+        )}
+      </button>
+    )
+  }
+
+  return (
+    <button
+      onClick={signInWithGoogle}
+      className="p-2 rounded-lg hover:bg-gray-100 flex items-center justify-center"
+      aria-label="Google로 로그인"
+      title="Google로 로그인"
+      style={{ minWidth: '44px', minHeight: '44px', color: 'var(--text-secondary)' }}
+    >
+      <LogIn size={16} />
     </button>
   )
 }
