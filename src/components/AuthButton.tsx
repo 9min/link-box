@@ -1,5 +1,32 @@
+import { useState } from 'react'
 import { LogIn, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
+
+function UserAvatar({ url, name, size }: { url: string | undefined; name: string; size: 'sm' | 'md' }) {
+  const [imgError, setImgError] = useState(false)
+  const px = size === 'sm' ? 'w-6 h-6' : 'w-7 h-7'
+  const iconSize = size === 'sm' ? 12 : 14
+
+  if (url && !imgError) {
+    return (
+      <img
+        src={url}
+        alt={name}
+        className={`${px} rounded-full flex-shrink-0`}
+        onError={() => setImgError(true)}
+      />
+    )
+  }
+
+  return (
+    <div
+      className={`${px} rounded-full flex items-center justify-center flex-shrink-0`}
+      style={{ background: 'var(--accent)', color: 'white' }}
+    >
+      <User size={iconSize} />
+    </div>
+  )
+}
 
 // Full version — used in the desktop sidebar
 export function AuthButton() {
@@ -13,23 +40,7 @@ export function AuthButton() {
 
     return (
       <div className="flex items-center gap-2 px-2 py-2 border-t" style={{ borderColor: 'var(--border)' }}>
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={name}
-            className="w-6 h-6 rounded-full flex-shrink-0"
-            onError={e => {
-              e.currentTarget.style.display = 'none'
-              e.currentTarget.nextElementSibling?.removeAttribute('style')
-            }}
-          />
-        ) : null}
-        <div
-          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-          style={{ background: 'var(--accent)', color: 'white', display: avatarUrl ? 'none' : undefined }}
-        >
-          <User size={12} />
-        </div>
+        <UserAvatar url={avatarUrl} name={name} size="sm" />
         <span
           className="text-xs flex-1 truncate"
           style={{ color: 'var(--text-secondary)' }}
@@ -80,23 +91,7 @@ export function AuthIconButton() {
         title={`${name} — 로그아웃`}
         style={{ minWidth: '44px', minHeight: '44px' }}
       >
-        {avatarUrl ? (
-          <img
-            src={avatarUrl}
-            alt={name}
-            className="w-7 h-7 rounded-full"
-            onError={e => {
-              e.currentTarget.style.display = 'none'
-              e.currentTarget.nextElementSibling?.removeAttribute('style')
-            }}
-          />
-        ) : null}
-        <div
-          className="w-7 h-7 rounded-full flex items-center justify-center"
-          style={{ background: 'var(--accent)', color: 'white', display: avatarUrl ? 'none' : undefined }}
-        >
-          <User size={14} />
-        </div>
+        <UserAvatar url={avatarUrl} name={name} size="md" />
       </button>
     )
   }
