@@ -63,6 +63,9 @@ export function FolderSheet({
     setInputVisible(false)
     try {
       await onCreate({ id: crypto.randomUUID(), name, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+    } catch {
+      setNewName(name)
+      setInputVisible(true)
     } finally {
       isCreating.current = false
     }
@@ -229,7 +232,7 @@ export function FolderSheet({
                   )}
                 </button>
                 <button
-                  className="w-8 h-8 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 mr-1 flex-shrink-0"
+                  className="w-8 h-8 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 [@media(hover:none)]:opacity-100 mr-1 flex-shrink-0"
                   style={{ color: 'var(--text-tertiary)' }}
                   onClick={() => setDeletingId(f.id)}
                   aria-label={`${f.name} 삭제`}
