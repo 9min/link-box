@@ -3,6 +3,7 @@ import {
   readLinks, saveLink, deleteLink, updateLink, incrementVisitCount,
   readFolders, saveFolder, deleteFolder,
   readSortOption, writeSortOption, readViewMode, writeViewMode,
+  clearLinks, clearFolders,
 } from '../storage'
 import { makeLink, makeFolder } from '@/test/factories'
 
@@ -60,6 +61,13 @@ describe('storage — links', () => {
     localStorage.setItem('link-box:links', 'not-valid-json')
     expect(readLinks()).toEqual([])
   })
+
+  it('clearLinks removes all links from storage', () => {
+    saveLink(makeLink({ url: 'https://example.com' }))
+    expect(readLinks()).toHaveLength(1)
+    clearLinks()
+    expect(readLinks()).toHaveLength(0)
+  })
 })
 
 describe('storage — folders', () => {
@@ -78,6 +86,13 @@ describe('storage — folders', () => {
     saveFolder(folder)
     const remaining = deleteFolder(folder.id)
     expect(remaining).toHaveLength(0)
+  })
+
+  it('clearFolders removes all folders from storage', () => {
+    saveFolder(makeFolder())
+    expect(readFolders()).toHaveLength(1)
+    clearFolders()
+    expect(readFolders()).toHaveLength(0)
   })
 })
 

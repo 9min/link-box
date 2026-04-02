@@ -138,3 +138,13 @@ export function readViewMode(): string {
 export function writeViewMode(value: string): void {
   localStorage.setItem(VIEW_KEY, value)
 }
+
+// ── Cloud migration cleanup ─────────────────────────────────────────────────
+
+export function clearLinks(): void {
+  localStorage.removeItem(LINKS_KEY)
+}
+
+export function clearFolders(): void {
+  localStorage.removeItem(FOLDERS_KEY)
+}
