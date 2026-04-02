@@ -1,6 +1,9 @@
 # dependencies
 node_modules/
 
+# vite cache
+.vite/
+
 # build
 dist/
 

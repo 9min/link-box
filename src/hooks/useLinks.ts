@@ -1,18 +1,22 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { Link, SortOption } from '@/lib/types'
-import * as storage from '@/lib/storage'
+import * as localStorage_ from '@/lib/storage'
+import * as supabaseStorage from '@/lib/supabaseStorage'
+import type { SaveLinkResult } from '@/lib/storage'
 
 export interface UseLinksReturn {
   links: Link[]
-  addLink: (link: Link) => storage.SaveLinkResult
-  removeLink: (id: string) => void
-  editLink: (id: string, patch: Partial<Link>) => void
-  clickLink: (id: string) => void
-  toggleFavorite: (id: string) => void
-  unassignFolder: (folderId: string) => void
+  isLoading: boolean
+  addLink: (link: Link) => Promise<SaveLinkResult>
+  removeLink: (id: string) => Promise<void>
+  editLink: (id: string, patch: Partial<Link>) => Promise<void>
+  clickLink: (id: string) => Promise<void>
+  toggleFavorite: (id: string) => Promise<void>
+  unassignFolder: (folderId: string) => Promise<void>
   sortOption: SortOption
   setSortOption: (opt: SortOption) => void
   getDuplicateId: (url: string) => string | undefined
+  reload: () => Promise<void>
 }
 
 function sortLinks(links: Link[], sort: SortOption): Link[] {
@@ -29,59 +33,136 @@ function sortLinks(links: Link[], sort: SortOption): Link[] {
   }
 }
 
-export function useLinks(): UseLinksReturn {
-  const [links, setLinks] = useState<Link[]>(() => storage.readLinks())
-  const [sortOption, _setSortOption] = useState<SortOption>(
-    () => storage.readSortOption() as SortOption
+export function useLinks(isAuthenticated: boolean): UseLinksReturn {
+  const [links, setLinks] = useState<Link[]>(() =>
+    isAuthenticated ? [] : localStorage_.readLinks()
   )
+  const [isLoading, setIsLoading] = useState(isAuthenticated)
+  const [sortOption, _setSortOption] = useState<SortOption>(
+    () => localStorage_.readSortOption() as SortOption
+  )
+
+  // Reload from Supabase when authenticated
+  const reload = useCallback(async () => {
+    if (!isAuthenticated) return
+    setIsLoading(true)
+    try {
+      const data = await supabaseStorage.readLinks()
+      setLinks(data)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isAuthenticated])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      reload()
+    } else {
+      setLinks(localStorage_.readLinks())
+      setIsLoading(false)
+    }
+  }, [isAuthenticated, reload])
 
   const sortedLinks = sortLinks(links, sortOption)
 
-  const addLink = useCallback((link: Link): storage.SaveLinkResult => {
-    const result = storage.saveLink(link)
-    if (result.ok) {
-      setLinks(storage.readLinks())
+  const addLink = useCallback(async (link: Link): Promise<SaveLinkResult> => {
+    if (!isAuthenticated) {
+      const result = localStorage_.saveLink(link)
+      if (result.ok) setLinks(localStorage_.readLinks())
+      return result
+    }
+
+    // Optimistic update
+    setLinks(prev => [link, ...prev])
+    const result = await supabaseStorage.saveLink(link)
+    if (!result.ok) {
+      // Rollback
+      setLinks(prev => prev.filter(l => l.id !== link.id))
     }
     return result
-  }, [])
+  }, [isAuthenticated])
 
-  const removeLink = useCallback((id: string) => {
-    const updated = storage.deleteLink(id)
-    setLinks(updated)
-  }, [])
+  const removeLink = useCallback(async (id: string) => {
+    if (!isAuthenticated) {
+      setLinks(localStorage_.deleteLink(id))
+      return
+    }
 
-  const editLink = useCallback((id: string, patch: Partial<Link>) => {
-    const updated = storage.updateLink(id, {
-      ...patch,
-      updatedAt: new Date().toISOString(),
-    })
-    setLinks(updated)
-  }, [])
+    setLinks(prev => prev.filter(l => l.id !== id))
+    try {
+      await supabaseStorage.deleteLink(id)
+    } catch {
+      await reload()
+    }
+  }, [isAuthenticated, reload])
 
-  const clickLink = useCallback((id: string) => {
-    const updated = storage.incrementVisitCount(id)
-    setLinks(updated)
-  }, [])
+  const editLink = useCallback(async (id: string, patch: Partial<Link>) => {
+    const patchWithTimestamp = { ...patch, updatedAt: new Date().toISOString() }
 
-  const toggleFavorite = useCallback((id: string) => {
-    const current = storage.readLinks()
-    const link = current.find(l => l.id === id)
+    if (!isAuthenticated) {
+      setLinks(localStorage_.updateLink(id, patchWithTimestamp))
+      return
+    }
+
+    setLinks(prev => prev.map(l => l.id === id ? { ...l, ...patchWithTimestamp } : l))
+    try {
+      await supabaseStorage.updateLink(id, patchWithTimestamp)
+    } catch {
+      await reload()
+    }
+  }, [isAuthenticated, reload])
+
+  const clickLink = useCallback(async (id: string) => {
+    if (!isAuthenticated) {
+      setLinks(localStorage_.incrementVisitCount(id))
+      return
+    }
+
+    setLinks(prev => prev.map(l => l.id === id ? { ...l, visitCount: l.visitCount + 1 } : l))
+    try {
+      await supabaseStorage.incrementVisitCount(id)
+    } catch {
+      // Non-critical — don't rollback visit count failures
+    }
+  }, [isAuthenticated])
+
+  const toggleFavorite = useCallback(async (id: string) => {
+    const link = links.find(l => l.id === id)
     if (!link) return
-    const updated = storage.updateLink(id, {
-      isFavorite: !link.isFavorite,
-      updatedAt: new Date().toISOString(),
-    })
-    setLinks(updated)
-  }, [])
 
-  const unassignFolder = useCallback((folderId: string) => {
-    const updated = storage.unassignFolderLinks(folderId)
-    setLinks(updated)
-  }, [])
+    const newFavorite = !link.isFavorite
+    const patch = { isFavorite: newFavorite, updatedAt: new Date().toISOString() }
+
+    if (!isAuthenticated) {
+      setLinks(localStorage_.updateLink(id, patch))
+      return
+    }
+
+    setLinks(prev => prev.map(l => l.id === id ? { ...l, ...patch } : l))
+    try {
+      await supabaseStorage.updateLink(id, patch)
+    } catch {
+      await reload()
+    }
+  }, [isAuthenticated, links, reload])
+
+  const unassignFolder = useCallback(async (folderId: string) => {
+    if (!isAuthenticated) {
+      setLinks(localStorage_.unassignFolderLinks(folderId))
+      return
+    }
+
+    setLinks(prev => prev.map(l => l.folderId === folderId ? { ...l, folderId: null } : l))
+    try {
+      await supabaseStorage.unassignFolderLinks(folderId)
+    } catch {
+      await reload()
+    }
+  }, [isAuthenticated, reload])
 
   const setSortOption = useCallback((opt: SortOption) => {
     _setSortOption(opt)
-    storage.writeSortOption(opt)
+    localStorage_.writeSortOption(opt)
   }, [])
 
   const getDuplicateId = useCallback(
@@ -91,6 +172,7 @@ export function useLinks(): UseLinksReturn {
 
   return {
     links: sortedLinks,
+    isLoading,
     addLink,
     removeLink,
     editLink,
@@ -100,5 +182,6 @@ export function useLinks(): UseLinksReturn {
     sortOption,
     setSortOption,
     getDuplicateId,
+    reload,
   }
 }

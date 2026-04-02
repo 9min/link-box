@@ -5,6 +5,7 @@ import type { Link, SortOption, ViewMode } from '@/lib/types'
 import { useLinks } from '@/hooks/useLinks'
 import { useFolders } from '@/hooks/useFolders'
 import { useSearch } from '@/hooks/useSearch'
+import { useAuth } from '@/contexts/AuthContext'
 import { CATEGORIES } from '@/lib/categories'
 import { LinkCard } from '@/components/LinkCard'
 import { LinkListRow } from '@/components/LinkListRow'
@@ -13,6 +14,7 @@ import { AddLinkModal } from '@/components/AddLinkModal'
 import { EditLinkModal } from '@/components/EditLinkModal'
 import { SearchOverlay } from '@/components/SearchOverlay'
 import { EmptyState } from '@/components/EmptyState'
+import { AuthButton } from '@/components/AuthButton'
 import * as storage from '@/lib/storage'
 
 const SORT_LABELS: Record<SortOption, string> = {
@@ -258,6 +260,11 @@ function SidebarContent({
           </div>
         ))}
       </div>
+
+      {/* Auth — pinned to bottom of sidebar */}
+      <div className="mt-auto pt-3">
+        <AuthButton />
+      </div>
     </>
   )
 }
@@ -268,8 +275,10 @@ function isRecent(link: Link): boolean {
 }
 
 export function HomePage() {
-  const { links, addLink, removeLink, editLink, clickLink, toggleFavorite, unassignFolder, sortOption, setSortOption, getDuplicateId } = useLinks()
-  const { folders, addFolder, removeFolder } = useFolders()
+  const { user } = useAuth()
+  const isAuthenticated = !!user
+  const { links, isLoading, addLink, removeLink, editLink, clickLink, toggleFavorite, unassignFolder, sortOption, setSortOption, getDuplicateId } = useLinks(isAuthenticated)
+  const { folders, addFolder, removeFolder } = useFolders(isAuthenticated)
   const { filteredLinks, hasQuery } = useSearch(links)
 
   const [viewMode, setViewMode] = useState<ViewMode>(() => storage.readViewMode() as ViewMode)
@@ -322,11 +331,11 @@ export function HomePage() {
 
   const handleCardOpen = useCallback((link: Link) => {
     window.open(link.url, '_blank', 'noopener,noreferrer')
-    clickLink(link.id)
+    void clickLink(link.id)
   }, [clickLink])
 
   const handleDelete = useCallback((id: string) => {
-    removeLink(id)
+    void removeLink(id)
     toast.success('삭제되었습니다')
   }, [removeLink])
 
@@ -338,24 +347,24 @@ export function HomePage() {
   const handleFolderCreate = useCallback(() => {
     const name = newFolderName.trim()
     if (!name) return
-    addFolder({ id: crypto.randomUUID(), name, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
+    void addFolder({ id: crypto.randomUUID(), name, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() })
     setNewFolderName('')
     setFolderInputVisible(false)
   }, [newFolderName, addFolder])
 
   const handleFolderDelete = useCallback((id: string) => {
-    unassignFolder(id)
-    removeFolder(id)
+    void unassignFolder(id)
+    void removeFolder(id)
     if (activeFolderId === id) setActiveFolderId(null)
     setDeletingFolderId(null)
   }, [unassignFolder, removeFolder, activeFolderId])
 
   const handleEditSave = useCallback((id: string, patch: Partial<Link>) => {
-    editLink(id, patch)
+    void editLink(id, patch)
   }, [editLink])
 
-  const handleAddLinkSave = useCallback((link: Link) => {
-    const result = addLink(link)
+  const handleAddLinkSave = useCallback(async (link: Link) => {
+    const result = await addLink(link)
     if (!result.ok && result.error === 'DUPLICATE_URL') {
       const dupId = getDuplicateId(link.url)
       if (dupId) {
@@ -363,8 +372,14 @@ export function HomePage() {
           action: {
             label: '바로 가기',
             onClick: () => {
-              const el = cardRefs.current[dupId]
-              el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              // Clear filters so the card is visible before scrolling
+              setActiveFilter('all')
+              setActiveCategoryId(null)
+              setActiveFolderId(null)
+              setTimeout(() => {
+                const el = cardRefs.current[dupId]
+                el?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              }, 50)
             },
           },
         })
