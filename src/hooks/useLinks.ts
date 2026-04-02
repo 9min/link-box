@@ -3,6 +3,7 @@ import type { Link, SortOption } from '@/lib/types'
 import * as localStorage_ from '@/lib/storage'
 import * as supabaseStorage from '@/lib/supabaseStorage'
 import type { SaveLinkResult } from '@/lib/storage'
+import { supabase } from '@/lib/supabase'
 
 export interface UseLinksReturn {
   links: Link[]
@@ -61,6 +62,20 @@ export function useLinks(isAuthenticated: boolean): UseLinksReturn {
       setLinks(localStorage_.readLinks())
       setIsLoading(false)
     }
+  }, [isAuthenticated, reload])
+
+  // Realtime sync: reload links when another tab or device makes changes
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    const channel = supabase
+      .channel('links-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, () => {
+        void reload()
+      })
+      .subscribe()
+
+    return () => { void supabase.removeChannel(channel) }
   }, [isAuthenticated, reload])
 
   const sortedLinks = sortLinks(links, sortOption)
