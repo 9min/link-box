@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { LayoutGrid, List, ChevronDown, Search, Plus, X, Inbox, Star, Clock, FolderOpen, Link2 } from 'lucide-react'
+import { FolderSheet } from '@/components/FolderSheet'
 import { toast } from 'sonner'
 import type { Link, SortOption, ViewMode } from '@/lib/types'
 import { useLinks } from '@/hooks/useLinks'
@@ -289,6 +290,7 @@ export function HomePage() {
   const [folderInputVisible, setFolderInputVisible] = useState(false)
   const [newFolderName, setNewFolderName] = useState('')
   const [deletingFolderId, setDeletingFolderId] = useState<string | null>(null)
+  const [folderSheetOpen, setFolderSheetOpen] = useState(false)
   const cardRefs = useRef<Record<string, HTMLDivElement>>({})
 
   // Keyboard shortcuts
@@ -595,6 +597,26 @@ export function HomePage() {
             </button>
           ))}
 
+          {/* Active folder chip */}
+          {activeFolderId && (() => {
+            const f = folders.find(x => x.id === activeFolderId)
+            if (!f) return null
+            return (
+              <>
+                <div className="w-px h-4 flex-shrink-0" style={{ background: 'var(--border)' }} />
+                <button
+                  onClick={() => setActiveFolderId(null)}
+                  className="flex-shrink-0 flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium"
+                  style={{ background: 'var(--accent)', color: 'white', border: '1px solid transparent' }}
+                >
+                  <FolderOpen size={11} />
+                  {f.name}
+                  <X size={10} />
+                </button>
+              </>
+            )
+          })()}
+
           {/* Separator */}
           <div className="w-px h-4 flex-shrink-0" style={{ background: 'var(--border)' }} />
 
@@ -685,31 +707,41 @@ export function HomePage() {
           { key: 'all', label: '전체', icon: <Inbox size={20} /> },
           { key: 'favorites', label: '즐겨찾기', icon: <Star size={20} /> },
           { key: 'recent', label: '최근', icon: <Clock size={20} /> },
-          { key: 'search', label: '검색', icon: <Search size={20} /> },
+          { key: 'folder', label: '폴더', icon: <FolderOpen size={20} /> },
         ] as { key: string; label: string; icon: React.ReactNode }[]).map(tab => {
-          const isActive = tab.key === 'search'
-            ? searchOpen
+          const isActive = tab.key === 'folder'
+            ? folderSheetOpen
             : tab.key === activeFilter && !activeCategoryId && !activeFolderId
+          const hasFolderActive = tab.key === 'folder' && !!activeFolderId && !folderSheetOpen
           return (
             <button
               key={tab.key}
-              className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5"
+              className="flex-1 flex flex-col items-center justify-center py-2 gap-0.5 relative"
               style={{
-                color: isActive ? 'var(--accent)' : 'var(--text-tertiary)',
+                color: isActive || hasFolderActive ? 'var(--accent)' : 'var(--text-tertiary)',
                 minHeight: '56px',
               }}
               onClick={() => {
-                if (tab.key === 'search') {
-                  setSearchOpen(true)
+                if (tab.key === 'folder') {
+                  setFolderSheetOpen(true)
                 } else {
+                  setFolderSheetOpen(false)
                   handleSidebarFilter(tab.key as ActiveFilter)
                 }
               }}
               aria-label={tab.label}
               aria-current={isActive ? 'page' : undefined}
             >
-              {tab.icon}
-              <span style={{ fontSize: '10px', fontWeight: isActive ? 600 : 400 }}>{tab.label}</span>
+              <span className="relative">
+                {tab.icon}
+                {hasFolderActive && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
+                    style={{ background: 'var(--accent)', border: '1.5px solid white' }}
+                  />
+                )}
+              </span>
+              <span style={{ fontSize: '10px', fontWeight: isActive || hasFolderActive ? 600 : 400 }}>{tab.label}</span>
             </button>
           )
         })}
@@ -738,6 +770,22 @@ export function HomePage() {
         links={links}
         onClose={() => setSearchOpen(false)}
         onOpen={handleCardOpen}
+      />
+
+      {/* Mobile folder sheet */}
+      <FolderSheet
+        open={folderSheetOpen}
+        onClose={() => setFolderSheetOpen(false)}
+        folders={folders}
+        links={links}
+        activeFolderId={activeFolderId}
+        onSelect={id => {
+          setActiveFolderId(id)
+          setActiveFilter('all')
+          setActiveCategoryId(null)
+        }}
+        onCreate={async (folder) => { await addFolder(folder) }}
+        onDelete={handleFolderDelete}
       />
     </div>
   )
