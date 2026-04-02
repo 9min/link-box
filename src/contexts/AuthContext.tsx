@@ -89,10 +89,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
     setUser(null)
     if (error) {
-      // If the server-side signout fails, at minimum the local session is cleared
-      console.warn('signOut API error (local session cleared anyway):', error.message)
+      // Server-side session invalidation failed, but local session is cleared.
+      // Log only in dev to avoid leaking session info in production.
+      if (import.meta.env.DEV) {
+        console.warn('signOut API error (local session cleared anyway):', error.status, error.message)
+      }
+      toast.success('로그아웃 되었습니다') // local session cleared — UX success
+    } else {
+      toast.success('로그아웃 되었습니다')
     }
-    toast.success('로그아웃 되었습니다')
   }, [])
 
   return (

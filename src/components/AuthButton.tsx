@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { LogIn, LogOut, User } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 
@@ -6,6 +6,9 @@ function UserAvatar({ url, name, size }: { url: string | undefined; name: string
   const [imgError, setImgError] = useState(false)
   const px = size === 'sm' ? 'w-6 h-6' : 'w-7 h-7'
   const iconSize = size === 'sm' ? 12 : 14
+
+  // Reset error state when url changes (e.g. user switches account)
+  useEffect(() => { setImgError(false) }, [url])
 
   if (url && !imgError) {
     return (
@@ -49,7 +52,7 @@ export function AuthButton() {
           {name}
         </span>
         <button
-          onClick={signOut}
+          onClick={() => void signOut()}
           className="p-1 rounded hover:bg-gray-100 flex-shrink-0"
           aria-label="로그아웃"
           title="로그아웃"
@@ -78,6 +81,10 @@ export function AuthIconButton() {
   const { user, loading, signInWithGoogle, signOut } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') setMenuOpen(false)
+  }, [])
+
   if (loading) return null
 
   if (user) {
@@ -85,11 +92,13 @@ export function AuthIconButton() {
     const avatarUrl = user.user_metadata?.avatar_url as string | undefined
 
     return (
-      <div className="relative">
+      <div className="relative" onKeyDown={handleKeyDown}>
         <button
           onClick={() => setMenuOpen(v => !v)}
           className="flex items-center justify-center rounded-full"
           aria-label="계정 메뉴"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
           style={{ minWidth: '44px', minHeight: '44px' }}
         >
           <UserAvatar url={avatarUrl} name={name} size="md" />
@@ -100,11 +109,14 @@ export function AuthIconButton() {
             <div
               className="fixed inset-0 z-40"
               onClick={() => setMenuOpen(false)}
+              role="presentation"
+              aria-hidden="true"
             />
             {/* dropdown */}
             <div
-              className="absolute right-0 top-12 z-50 bg-white rounded-xl shadow-lg py-1 min-w-[160px]"
+              className="absolute right-0 top-full mt-1 z-50 bg-white rounded-xl shadow-lg py-1 min-w-[160px]"
               style={{ border: '1px solid var(--border)' }}
+              role="menu"
             >
               <div className="px-3 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
                 <p className="text-xs font-medium truncate" style={{ color: 'var(--text-primary)' }}>{name}</p>
@@ -113,6 +125,7 @@ export function AuthIconButton() {
                 onClick={() => { setMenuOpen(false); void signOut() }}
                 className="flex items-center gap-2 w-full px-3 py-2.5 text-sm hover:bg-gray-50"
                 style={{ color: 'var(--text-secondary)' }}
+                role="menuitem"
               >
                 <LogOut size={14} />
                 로그아웃
