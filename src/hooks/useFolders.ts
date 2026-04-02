@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react'
 import type { Folder } from '@/lib/types'
 import * as localStorage_ from '@/lib/storage'
 import * as supabaseStorage from '@/lib/supabaseStorage'
+import { supabase } from '@/lib/supabase'
 
 export interface UseFoldersReturn {
   folders: Folder[]
@@ -28,6 +29,20 @@ export function useFolders(isAuthenticated: boolean): UseFoldersReturn {
     } else {
       setFolders(localStorage_.readFolders())
     }
+  }, [isAuthenticated, reload])
+
+  // Realtime sync: reload folders when another tab or device makes changes
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    const channel = supabase
+      .channel('folders-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'folders' }, () => {
+        void reload()
+      })
+      .subscribe()
+
+    return () => { void supabase.removeChannel(channel) }
   }, [isAuthenticated, reload])
 
   const addFolder = useCallback(async (folder: Folder) => {
