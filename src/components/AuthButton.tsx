@@ -127,12 +127,17 @@ export function AuthIconButton() {
   return (
     <button
       onClick={signInWithGoogle}
-      className="p-2 rounded-lg hover:bg-gray-100 flex items-center justify-center"
+      className="flex items-center justify-center rounded-full"
       aria-label="Google로 로그인"
       title="Google로 로그인"
-      style={{ minWidth: '44px', minHeight: '44px', color: 'var(--text-secondary)' }}
+      style={{ minWidth: '44px', minHeight: '44px' }}
     >
-      <LogIn size={16} />
+      <div
+        className="w-7 h-7 rounded-full flex items-center justify-center"
+        style={{ background: 'var(--border)', color: 'var(--text-tertiary)' }}
+      >
+        <User size={14} />
+      </div>
     </button>
   )
 }
