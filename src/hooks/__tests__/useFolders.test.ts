@@ -3,7 +3,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useFolders } from '../useFolders'
 import { makeFolder } from '@/test/factories'
 
-const useLocalFolders = () => useFolders(false)
+const useLocalFolders = () => useFolders(null)
 
 describe('useFolders (local mode)', () => {
   it('starts with empty folders', () => {

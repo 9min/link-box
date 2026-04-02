@@ -12,7 +12,8 @@ export interface UseFoldersReturn {
   reload: () => Promise<void>
 }
 
-export function useFolders(isAuthenticated: boolean): UseFoldersReturn {
+export function useFolders(userId: string | null): UseFoldersReturn {
+  const isAuthenticated = !!userId
   const [folders, setFolders] = useState<Folder[]>(() =>
     isAuthenticated ? [] : localStorage_.readFolders()
   )
@@ -31,19 +32,22 @@ export function useFolders(isAuthenticated: boolean): UseFoldersReturn {
     }
   }, [isAuthenticated, reload])
 
-  // Realtime sync: reload folders when another tab or device makes changes
+  // Realtime sync: reload folders when another tab or device makes changes.
+  // filter: user_id=eq.{userId} is required for RLS to apply correctly with postgres_changes.
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!userId) return
 
     const channel = supabase
       .channel('folders-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'folders' }, () => {
-        void reload()
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'folders', filter: `user_id=eq.${userId}` },
+        () => { void reload() }
+      )
       .subscribe()
 
     return () => { void supabase.removeChannel(channel) }
-  }, [isAuthenticated, reload])
+  }, [userId, reload])
 
   const addFolder = useCallback(async (folder: Folder) => {
     if (!isAuthenticated) {

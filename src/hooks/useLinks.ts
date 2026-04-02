@@ -34,7 +34,8 @@ function sortLinks(links: Link[], sort: SortOption): Link[] {
   }
 }
 
-export function useLinks(isAuthenticated: boolean): UseLinksReturn {
+export function useLinks(userId: string | null): UseLinksReturn {
+  const isAuthenticated = !!userId
   const [links, setLinks] = useState<Link[]>(() =>
     isAuthenticated ? [] : localStorage_.readLinks()
   )
@@ -64,19 +65,22 @@ export function useLinks(isAuthenticated: boolean): UseLinksReturn {
     }
   }, [isAuthenticated, reload])
 
-  // Realtime sync: reload links when another tab or device makes changes
+  // Realtime sync: reload links when another tab or device makes changes.
+  // filter: user_id=eq.{userId} is required for RLS to apply correctly with postgres_changes.
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!userId) return
 
     const channel = supabase
       .channel('links-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'links' }, () => {
-        void reload()
-      })
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'links', filter: `user_id=eq.${userId}` },
+        () => { void reload() }
+      )
       .subscribe()
 
     return () => { void supabase.removeChannel(channel) }
-  }, [isAuthenticated, reload])
+  }, [userId, reload])
 
   const sortedLinks = sortLinks(links, sortOption)
 

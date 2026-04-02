@@ -273,9 +273,8 @@ function isRecent(link: Link): boolean {
 
 export function HomePage() {
   const { user } = useAuth()
-  const isAuthenticated = !!user
-  const { links, addLink, removeLink, editLink, clickLink, toggleFavorite, unassignFolder, sortOption, setSortOption, getDuplicateId } = useLinks(isAuthenticated)
-  const { folders, addFolder, removeFolder } = useFolders(isAuthenticated)
+  const { links, addLink, removeLink, editLink, clickLink, toggleFavorite, unassignFolder, sortOption, setSortOption, getDuplicateId } = useLinks(user?.id ?? null)
+  const { folders, addFolder, removeFolder } = useFolders(user?.id ?? null)
   const { filteredLinks, hasQuery } = useSearch(links)
 
   const [viewMode, setViewMode] = useState<ViewMode>(() => storage.readViewMode() as ViewMode)

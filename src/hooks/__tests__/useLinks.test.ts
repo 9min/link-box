@@ -3,8 +3,8 @@ import { renderHook, act } from '@testing-library/react'
 import { useLinks } from '../useLinks'
 import { makeLink } from '@/test/factories'
 
-// All tests use isAuthenticated=false (localStorage mode)
-const useLocalLinks = () => useLinks(false)
+// All tests use userId=null (localStorage mode)
+const useLocalLinks = () => useLinks(null)
 
 describe('useLinks (local mode)', () => {
   it('starts with empty links', () => {
