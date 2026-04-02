@@ -1,34 +1,78 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import type { Folder } from '@/lib/types'
-import * as storage from '@/lib/storage'
+import * as localStorage_ from '@/lib/storage'
+import * as supabaseStorage from '@/lib/supabaseStorage'
 
 export interface UseFoldersReturn {
   folders: Folder[]
-  addFolder: (folder: Folder) => void
-  removeFolder: (id: string) => void
-  renameFolder: (id: string, name: string) => void
+  addFolder: (folder: Folder) => Promise<void>
+  removeFolder: (id: string) => Promise<void>
+  renameFolder: (id: string, name: string) => Promise<void>
+  reload: () => Promise<void>
 }
 
-export function useFolders(): UseFoldersReturn {
-  const [folders, setFolders] = useState<Folder[]>(() => storage.readFolders())
+export function useFolders(isAuthenticated: boolean): UseFoldersReturn {
+  const [folders, setFolders] = useState<Folder[]>(() =>
+    isAuthenticated ? [] : localStorage_.readFolders()
+  )
 
-  const addFolder = useCallback((folder: Folder) => {
-    const updated = storage.saveFolder(folder)
-    setFolders(updated)
-  }, [])
+  const reload = useCallback(async () => {
+    if (!isAuthenticated) return
+    const data = await supabaseStorage.readFolders()
+    setFolders(data)
+  }, [isAuthenticated])
 
-  const removeFolder = useCallback((id: string) => {
-    const updated = storage.deleteFolder(id)
-    setFolders(updated)
-  }, [])
+  useEffect(() => {
+    if (isAuthenticated) {
+      reload()
+    } else {
+      setFolders(localStorage_.readFolders())
+    }
+  }, [isAuthenticated, reload])
 
-  const renameFolder = useCallback((id: string, name: string) => {
-    const updated = storage.updateFolder(id, {
-      name,
-      updatedAt: new Date().toISOString(),
-    })
-    setFolders(updated)
-  }, [])
+  const addFolder = useCallback(async (folder: Folder) => {
+    if (!isAuthenticated) {
+      setFolders(localStorage_.saveFolder(folder))
+      return
+    }
 
-  return { folders, addFolder, removeFolder, renameFolder }
+    setFolders(prev => [...prev, folder])
+    try {
+      await supabaseStorage.saveFolder(folder)
+    } catch {
+      await reload()
+    }
+  }, [isAuthenticated, reload])
+
+  const removeFolder = useCallback(async (id: string) => {
+    if (!isAuthenticated) {
+      setFolders(localStorage_.deleteFolder(id))
+      return
+    }
+
+    setFolders(prev => prev.filter(f => f.id !== id))
+    try {
+      await supabaseStorage.deleteFolder(id)
+    } catch {
+      await reload()
+    }
+  }, [isAuthenticated, reload])
+
+  const renameFolder = useCallback(async (id: string, name: string) => {
+    const patch = { name, updatedAt: new Date().toISOString() }
+
+    if (!isAuthenticated) {
+      setFolders(localStorage_.updateFolder(id, patch))
+      return
+    }
+
+    setFolders(prev => prev.map(f => f.id === id ? { ...f, ...patch } : f))
+    try {
+      await supabaseStorage.updateFolder(id, patch)
+    } catch {
+      await reload()
+    }
+  }, [isAuthenticated, reload])
+
+  return { folders, addFolder, removeFolder, renameFolder, reload }
 }

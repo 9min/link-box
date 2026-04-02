@@ -8,7 +8,7 @@ import { suggestCategory } from '@/lib/categories'
 interface AddLinkModalProps {
   open: boolean
   onClose: () => void
-  onSave: (link: Link) => { ok: boolean; error?: string }
+  onSave: (link: Link) => Promise<{ ok: boolean; error?: string }>
 }
 
 export function AddLinkModal({ open, onClose, onSave }: AddLinkModalProps) {
@@ -66,7 +66,7 @@ export function AddLinkModal({ open, onClose, onSave }: AddLinkModalProps) {
         updatedAt: now,
       }
 
-      const result = onSave(newLink)
+      const result = await onSave(newLink)
       if (!result.ok && result.error === 'QUOTA_EXCEEDED') {
         toast.error('저장 공간이 부족합니다')
       } else if (result.ok) {

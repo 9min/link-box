@@ -20,24 +20,27 @@
 
 ## 2단계: 정리 기능
 
-- [ ] 사이드바: 전체/즐겨찾기/최근(7일) 필터
-- [ ] 카테고리 필터 (9개 고정 카테고리)
-- [ ] 폴더 CRUD (삭제 시 링크 folderId = null, AlertDialog 확인)
-- [ ] 링크에 카테고리/폴더 할당
+- [x] 사이드바: 전체/즐겨찾기/최근(7일) 필터
+- [x] 카테고리 필터 (9개 고정 카테고리)
+- [x] 폴더 CRUD (삭제 시 링크 folderId = null, 인라인 확인 UI)
+- [x] 링크에 카테고리/폴더 할당 (편집 모달)
 - [x] 자동 카테고리 제안 (tldts 기반 도메인 규칙 매칭, `src/lib/categories.ts`)
 - [x] 정렬 드롭다운 (최신순 / 방문 많은 순 / A-Z), 전역 설정, localStorage 저장
-- [ ] 즐겨찾기 토글 (낙관적 업데이트, 아이콘 위치/UX 구현 직전 결정)
-- [ ] 모바일 하단 탭 네비게이션 (Home / 즐겨찾기 / 폴더 / 검색 — 4개)
-- [ ] 모바일 수평 스크롤 필터 칩 (All / 최근 / 카테고리 / 폴더)
-- [ ] 중복 URL + 필터 활성 시 scroll-to-card 처리 (구현 직전 결정)
+- [x] 즐겨찾기 토글 (낙관적 업데이트)
+- [x] 모바일 하단 탭 네비게이션 (전체 / 즐겨찾기 / 최근 / 검색 — 4개)
+- [x] 모바일 수평 스크롤 필터 칩 (All / 최근 / 카테고리)
+- [x] 중복 URL + 필터 활성 시 scroll-to-card 처리 (필터 초기화 후 스크롤)
 
 ## 3단계: 인증 + 클라우드
 
-- [ ] Supabase Auth + Google OAuth 설정
-- [ ] Supabase 테이블 생성 (links, folders) + RLS
-- [ ] 로그인/로그아웃 UI
-- [ ] 최초 로그인 시 localStorage → Supabase 마이그레이션 (URL 기준 dedup)
-- [ ] 오프라인 감지 (`navigator.onLine`) + 온라인 복귀 시 last-write-wins 동기화
+- [x] Supabase Auth + Google OAuth 설정 (AuthContext.tsx, AuthButton.tsx)
+- [x] Supabase 테이블 생성 SQL (supabase/migrations/20260402000000_init.sql)
+- [x] 로그인/로그아웃 UI (사이드바 하단 AuthButton)
+- [x] 최초 로그인 시 localStorage → Supabase 마이그레이션 (URL 기준 dedup)
+- [x] `useLinks` / `useFolders` 백엔드 분기 (isAuthenticated 기반, 낙관적 업데이트)
+- [ ] Supabase 프로젝트 대시보드에서 Google OAuth 공급자 활성화
+- [ ] Supabase 대시보드에서 마이그레이션 SQL 실행 (`supabase/migrations/20260402000000_init.sql`)
+- [ ] 오프라인 감지 (`navigator.onLine`) + 온라인 복귀 시 재동기화 (선택)
 
 ## 4단계: 배포 + 마무리
 
@@ -47,15 +50,9 @@
 
 ## 품질 / 기술 부채
 
-- [ ] `useLinks` / `useFolders` 훅 단위테스트 (Supabase 마이그레이션 시 회귀 방지) — 58개 테스트 구현됨, Phase 3 마이그레이션 시 확장 필요
-- [ ] 카테고리 뱃지 9개 색상 WCAG AA (4.5:1) 컨트라스트 검증 — Badge 구현 시점에 실행
-- [ ] DESIGN.md 생성 (`/gstack-design-consultation`) — Phase 3 신규 화면(로그인, 설정) 추가 전
-
-## 디자인 리뷰 후 추가 (2026-04-01)
-
-- [ ] DESIGN.md 생성 — Phase 3 신규 화면 추가 전 `/gstack-design-consultation` 실행
-- [ ] 카테고리 뱃지 WCAG AA 검증 — 9개 배지 색상 4.5:1 이상 확인
-- [ ] 검색 Phase 1 이동 반영 ✅ — SearchOverlay 구현 완료
+- [x] `useLinks` / `useFolders` 훅 단위테스트 — 91개 테스트 모두 통과
+- [ ] 카테고리 뱃지 9개 색상 WCAG AA (4.5:1) 컨트라스트 검증
+- [ ] DESIGN.md 생성 (`/gstack-design-consultation`) — Phase 3 신규 화면 추가 전
 
 ## 향후 (선택)
 

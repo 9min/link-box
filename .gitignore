@@ -1,6 +1,9 @@
 # dependencies
 node_modules/
 
+# vite cache
+.vite/
+
 # build
 dist/
 
@@ -27,3 +30,4 @@ yarn-error.log*
 
 # supabase
 supabase/.temp/
+.gstack/
