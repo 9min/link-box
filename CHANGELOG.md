@@ -2,6 +2,19 @@
 
 All notable changes to link-box are documented here.
 
+## [0.1.1.0] - 2026-04-02
+
+### Added
+- **Supabase Realtime sync** — links and folders now update instantly across tabs and devices without a page refresh; uses `postgres_changes` subscription in `useLinks` and `useFolders`
+- `clearLinks()` / `clearFolders()` in `storage.ts` — remove localStorage data after cloud migration
+
+### Fixed
+- After logging in and migrating local data to the cloud, localStorage is now cleared so logout shows a clean state instead of stale pre-migration data
+
+### Changed
+- Added `20260402000001_enable_realtime.sql` migration to enable Supabase Realtime publication for `links` and `folders` tables
+- 2 new unit tests for `clearLinks` / `clearFolders` (93 total)
+
 ## [0.0.3.0] - 2026-04-01
 
 ### Added
