@@ -277,7 +277,7 @@ function isRecent(link: Link): boolean {
 export function HomePage() {
   const { user } = useAuth()
   const isAuthenticated = !!user
-  const { links, isLoading, addLink, removeLink, editLink, clickLink, toggleFavorite, unassignFolder, sortOption, setSortOption, getDuplicateId } = useLinks(isAuthenticated)
+  const { links, addLink, removeLink, editLink, clickLink, toggleFavorite, unassignFolder, sortOption, setSortOption, getDuplicateId } = useLinks(isAuthenticated)
   const { folders, addFolder, removeFolder } = useFolders(isAuthenticated)
   const { filteredLinks, hasQuery } = useSearch(links)
 
