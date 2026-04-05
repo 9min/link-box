@@ -154,30 +154,62 @@ serve(async (req: Request) => {
     })
   }
 
-  // Fetch the page
+  // Fetch the page (follow redirects up to 3 hops, blocking SSRF at each hop)
   try {
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 5000)
+    let currentUrl = parsed.href
+    let res: Response | null = null
 
-    const res = await fetch(parsed.href, {
-      signal: controller.signal,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; link-box-bot/1.0)',
-        Accept: 'text/html',
-      },
-      redirect: 'manual',
-    })
+    for (let hop = 0; hop <= 3; hop++) {
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), 5000)
 
-    clearTimeout(timeout)
+      res = await fetch(currentUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; link-box-bot/1.0)',
+          Accept: 'text/html',
+        },
+        redirect: 'manual',
+      })
 
-    // Redirect — do not follow (SSRF redirect bypass prevention)
-    if (res.status >= 300 && res.status < 400) {
-      const domain = extractDomain(url)
-      return new Response(
-        JSON.stringify({ title: domain, description: '', ogImage: null, favicon: getFaviconUrl(domain), domain }),
-        { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } }
-      )
+      clearTimeout(timeout)
+
+      if (res.status >= 300 && res.status < 400) {
+        const location = res.headers.get('location')
+        if (!location || hop === 3) {
+          // Too many redirects or no location — fallback
+          const domain = extractDomain(url)
+          return new Response(
+            JSON.stringify({ title: domain, description: '', ogImage: null, favicon: getFaviconUrl(domain), domain }),
+            { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } }
+          )
+        }
+        // Resolve relative redirect and SSRF-check the destination
+        let nextUrl: URL
+        try {
+          nextUrl = new URL(location, currentUrl)
+          if (nextUrl.protocol !== 'https:' && nextUrl.protocol !== 'http:') throw new Error()
+        } catch {
+          const domain = extractDomain(url)
+          return new Response(
+            JSON.stringify({ title: domain, description: '', ogImage: null, favicon: getFaviconUrl(domain), domain }),
+            { status: 200, headers: { ...headers, 'Content-Type': 'application/json' } }
+          )
+        }
+        if (isPrivateHost(nextUrl.hostname)) {
+          return new Response(JSON.stringify({ error: 'Invalid URL' }), {
+            status: 400,
+            headers: { ...headers, 'Content-Type': 'application/json' },
+          })
+        }
+        currentUrl = nextUrl.href
+        continue
+      }
+
+      break
     }
+
+    if (!res) throw new Error('No response')
 
     if (!res.ok) {
       return new Response(
