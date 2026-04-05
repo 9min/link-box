@@ -3,6 +3,41 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { LinkCard } from '../LinkCard'
 import { makeLink } from '@/test/factories'
 
+describe('getYoutubeVideoId (via OgImage fallback)', () => {
+  const defaultProps = { onOpen: vi.fn(), onDelete: vi.fn(), onEdit: vi.fn() }
+
+  it('shows YouTube thumbnail for youtu.be links with no ogImage', () => {
+    const link = makeLink({ url: 'https://youtu.be/dQw4w9WgXcQ', ogImage: null, domain: 'youtu.be' })
+    const { container } = render(<LinkCard link={link} {...defaultProps} />)
+    const ogImg = container.querySelector('img[src*="img.youtube.com"]')
+    expect(ogImg).not.toBeNull()
+    expect(ogImg).toHaveAttribute('src', 'https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg')
+  })
+
+  it('shows YouTube thumbnail for youtube.com/watch?v= links with no ogImage', () => {
+    const link = makeLink({ url: 'https://www.youtube.com/watch?v=9bZkp7q19f0', ogImage: null, domain: 'youtube.com' })
+    const { container } = render(<LinkCard link={link} {...defaultProps} />)
+    const ogImg = container.querySelector('img[src*="img.youtube.com"]')
+    expect(ogImg).not.toBeNull()
+    expect(ogImg).toHaveAttribute('src', 'https://img.youtube.com/vi/9bZkp7q19f0/hqdefault.jpg')
+  })
+
+  it('prefers ogImage over YouTube fallback when ogImage is set', () => {
+    const link = makeLink({ url: 'https://youtu.be/dQw4w9WgXcQ', ogImage: 'https://example.com/thumb.jpg', domain: 'youtu.be' })
+    const { container } = render(<LinkCard link={link} {...defaultProps} />)
+    const ogImg = container.querySelector('img[src="https://example.com/thumb.jpg"]')
+    expect(ogImg).not.toBeNull()
+    expect(container.querySelector('img[src*="img.youtube.com"]')).toBeNull()
+  })
+
+  it('shows domain initial placeholder for non-YouTube links with no ogImage', () => {
+    const link = makeLink({ url: 'https://github.com/foo', ogImage: null, domain: 'github.com' })
+    const { container } = render(<LinkCard link={link} {...defaultProps} />)
+    expect(screen.getByText('G')).toBeInTheDocument()
+    expect(container.querySelector('img[src*="img.youtube.com"]')).toBeNull()
+  })
+})
+
 describe('LinkCard', () => {
   const defaultProps = {
     onOpen: vi.fn(),
