@@ -178,6 +178,7 @@ serve(async (req: Request) => {
         const location = res.headers.get('location')
         if (!location || hop === 3) {
           // Too many redirects or no location — fallback
+          clearTimeout(timeout)
           const domain = extractDomain(url)
           return new Response(
             JSON.stringify({ title: domain, description: '', ogImage: null, favicon: getFaviconUrl(domain), domain }),
@@ -190,6 +191,7 @@ serve(async (req: Request) => {
           nextUrl = new URL(location, currentUrl)
           if (nextUrl.protocol !== 'https:' && nextUrl.protocol !== 'http:') throw new Error()
         } catch {
+          clearTimeout(timeout)
           const domain = extractDomain(url)
           return new Response(
             JSON.stringify({ title: domain, description: '', ogImage: null, favicon: getFaviconUrl(domain), domain }),
@@ -197,6 +199,7 @@ serve(async (req: Request) => {
           )
         }
         if (isPrivateHost(nextUrl.hostname)) {
+          clearTimeout(timeout)
           return new Response(JSON.stringify({ error: 'Invalid URL' }), {
             status: 400,
             headers: { ...headers, 'Content-Type': 'application/json' },
