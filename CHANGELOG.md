@@ -2,6 +2,17 @@
 
 All notable changes to link-box are documented here.
 
+## [0.1.2.0] - 2026-04-05
+
+### Fixed
+- **YouTube 썸네일 표시** — `youtu.be` 단축 URL 카드에서 OG 이미지 대신 글자 플레이스홀더가 표시되던 문제 수정
+  - `LinkCard`: `ogImage`가 null일 때 클라이언트 사이드에서 YouTube 썸네일 URL 생성 (`img.youtube.com/vi/{id}/hqdefault.jpg`)
+  - Edge Function `og-meta`: `redirect: 'manual'`로 인해 `youtu.be` → `youtube.com` 리다이렉트를 무시하던 문제 수정, 최대 3회 리다이렉트 허용 (각 hop마다 SSRF 체크 유지)
+  - 리다이렉트 루프 early return 경로 3곳에서 `clearTimeout` 누락 수정
+
+### Added
+- 4 new component tests covering `getYoutubeVideoId` fallback (youtu.be, youtube.com, ogImage preference, non-YouTube) — 97 tests total
+
 ## [0.1.1.0] - 2026-04-02
 
 ### Added

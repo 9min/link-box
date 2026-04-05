@@ -12,10 +12,30 @@ interface LinkCardProps {
   onToggleFavorite?: (id: string) => void
 }
 
+function getYoutubeVideoId(url: string): string | null {
+  try {
+    const parsed = new URL(url)
+    if (parsed.hostname === 'youtu.be') {
+      return parsed.pathname.slice(1).split('/')[0] || null
+    }
+    if (parsed.hostname.endsWith('youtube.com')) {
+      return parsed.searchParams.get('v')
+    }
+  } catch {
+    // ignore
+  }
+  return null
+}
+
 function OgImage({ link }: { link: Link }) {
   const [imgError, setImgError] = useState(false)
 
-  if (!link.ogImage || imgError) {
+  const effectiveOgImage = link.ogImage ?? (() => {
+    const ytId = getYoutubeVideoId(link.url)
+    return ytId ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg` : null
+  })()
+
+  if (!effectiveOgImage || imgError) {
     const initial = link.domain.charAt(0).toUpperCase()
     return (
       <div
@@ -35,7 +55,7 @@ function OgImage({ link }: { link: Link }) {
 
   return (
     <img
-      src={link.ogImage}
+      src={effectiveOgImage}
       alt=""
       loading="lazy"
       onError={() => setImgError(true)}
